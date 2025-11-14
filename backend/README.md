@@ -32,7 +32,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 2. 安装依赖
 
 ```bash
-uv pip install -e .
+uv sync
 ```
 
 ### 3. 配置环境变量
