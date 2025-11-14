@@ -1,0 +1,51 @@
+[project]
+name = "authhub-sdk"
+version = "0.1.0"
+description = "AuthHub Python SDK - 统一权限平台SDK"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "AuthHub Team", email = "sdk@authhub.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "pyjwt[crypto]>=2.8.0",
+    "redis>=5.0.1",
+    "requests>=2.31.0",
+    "cryptography>=41.0.7",
+]
+
+[project.optional-dependencies]
+fastapi = ["fastapi>=0.104.0"]
+flask = ["flask>=3.0.0"]
+django = ["django>=4.2.0"]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.21.1",
+    "black>=23.12.0",
+    "ruff>=0.1.8",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/AuthHub"
+Documentation = "https://docs.authhub.com"
+Repository = "https://github.com/your-org/AuthHub/sdk/python"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+
