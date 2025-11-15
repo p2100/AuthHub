@@ -1,12 +1,15 @@
 """安全相关工具"""
-import jwt
+
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple
-from app.core.config import settings
-from app.core.cache import redis_client
+
+import jwt
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend
+
+from app.core.cache import redis_client
+from app.core.config import settings
 
 
 class JWTHandler:
@@ -15,7 +18,7 @@ class JWTHandler:
     def __init__(self):
         self.algorithm = settings.JWT_ALGORITHM
         self.expire_minutes = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
-    
+
     def create_access_token(
         self,
         user_id: int,
@@ -27,11 +30,11 @@ class JWTHandler:
         system_resources: dict,
         dept_ids: list = None,
         dept_names: list = None,
-        expires_delta: Optional[timedelta] = None
+        expires_delta: Optional[timedelta] = None,
     ) -> str:
         """
         创建用户Token
-        
+
         Args:
             user_id: 用户ID
             username: 用户名
@@ -43,15 +46,15 @@ class JWTHandler:
             dept_ids: 部门ID列表
             dept_names: 部门名称列表
             expires_delta: 过期时间
-            
+
         Returns:
             JWT Token
         """
         if expires_delta is None:
             expires_delta = timedelta(minutes=self.expire_minutes)
-        
+
         expire = datetime.utcnow() + expires_delta
-        
+
         payload = {
             "sub": str(user_id),
             "user_type": "user",
@@ -65,85 +68,82 @@ class JWTHandler:
             "system_resources": system_resources,
             "exp": expire,
             "iat": datetime.utcnow(),
-            "jti": f"user_{user_id}_{int(datetime.utcnow().timestamp())}"
+            "jti": f"user_{user_id}_{int(datetime.utcnow().timestamp())}",
         }
-        
+
         # 读取私钥
-        with open(settings.JWT_PRIVATE_KEY_PATH, 'r') as f:
+        with open(settings.JWT_PRIVATE_KEY_PATH, "r") as f:
             private_key = f.read()
-        
+
         token = jwt.encode(payload, private_key, algorithm=self.algorithm)
         return token
-    
+
     def generate_system_token(
-        self,
-        system_id: str,
-        system_name: str,
-        expires_days: int = 365
+        self, system_id: str, system_name: str, expires_days: int = 365
     ) -> str:
         """
         生成系统Token
-        
+
         Args:
             system_id: 系统代码
             system_name: 系统名称
             expires_days: 过期天数
-            
+
         Returns:
             JWT Token
         """
         expire = datetime.utcnow() + timedelta(days=expires_days)
-        
+
         payload = {
             "sub": system_id,
             "user_type": "system",
             "system_name": system_name,
             "exp": expire,
             "iat": datetime.utcnow(),
-            "jti": f"system_{system_id}_{int(datetime.utcnow().timestamp())}"
+            "jti": f"system_{system_id}_{int(datetime.utcnow().timestamp())}",
         }
-        
+
         # 读取私钥
-        with open(settings.JWT_PRIVATE_KEY_PATH, 'r') as f:
+        with open(settings.JWT_PRIVATE_KEY_PATH, "r") as f:
             private_key = f.read()
-        
+
         token = jwt.encode(payload, private_key, algorithm=self.algorithm)
         return token
-    
+
     def verify_token(self, token: str) -> Dict:
         """
         验证Token
-        
+
         Args:
             token: JWT Token
-            
+
         Returns:
             Token payload
         """
         # 读取公钥
-        with open(settings.JWT_PUBLIC_KEY_PATH, 'r') as f:
+        with open(settings.JWT_PUBLIC_KEY_PATH, "r") as f:
             public_key = f.read()
-        
+
         payload = jwt.decode(token, public_key, algorithms=[self.algorithm])
         return payload
-    
+
     def add_to_blacklist(self, jti: str, expire_seconds: int = 3600):
         """
         将Token加入黑名单
-        
+
         Args:
             jti: JWT ID
             expire_seconds: 过期时间(秒)
         """
         redis_client.setex(f"blacklist:{jti}", expire_seconds, "1")
-    
+
     def is_blacklisted(self, jti: str) -> bool:
         """
         检查Token是否在黑名单
-        
+
         Args:
             jti: JWT ID
-            
+
         Returns:
             是否在黑名单
         """
@@ -162,26 +162,23 @@ def generate_rsa_keys(key_size: int = 2048) -> Tuple[str, str]:
     """
     # 生成RSA私钥
     private_key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=key_size,
-        backend=default_backend()
+        public_exponent=65537, key_size=key_size, backend=default_backend()
     )
 
     # 获取私钥PEM格式
     private_key_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption()
-    ).decode('utf-8')
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode("utf-8")
 
     # 获取公钥
     public_key = private_key.public_key()
 
     # 获取公钥PEM格式
     public_key_pem = public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    ).decode('utf-8')
+        encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
+    ).decode("utf-8")
 
     return private_key_pem, public_key_pem
 
