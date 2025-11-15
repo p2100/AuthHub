@@ -27,7 +27,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres-test-data:/var/lib/postgresql/data
+      - ./data/postgres-test-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U testuser"]
       interval: 5s
@@ -40,17 +40,13 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis-test-data:/data
+      - ./data/redis-test-data:/data
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
-
-volumes:
-  postgres-test-data:
-  redis-test-data:
 ```
 
 2. 启动测试数据库：
