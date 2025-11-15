@@ -1,6 +1,6 @@
 """认证API路由"""
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import jwt_handler
@@ -38,7 +38,7 @@ async def feishu_login(redirect_uri: str = Query(..., description="回调URI")):
 @router.get("/feishu/callback", response_model=TokenResponse)
 async def feishu_callback(
     code: str = Query(..., description="飞书授权码"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     飞书登录回调

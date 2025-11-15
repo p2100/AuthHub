@@ -1,6 +1,7 @@
 """RBAC API路由"""
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import Optional
 
 from app.core.database import get_db
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/rbac", tags=["RBAC权限管理"])
 async def create_role(
     role_data: RoleCreate,
     current_user: dict = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """创建角色"""
     role_service = RoleService(db)
@@ -52,20 +53,21 @@ async def create_role(
 async def list_roles(
     namespace: Optional[str] = Query(None, description="命名空间过滤"),
     system_id: Optional[int] = Query(None, description="系统ID过滤"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """获取角色列表"""
     from app.models.role import Role
-    
-    query = db.query(Role)
-    
+
+    stmt = select(Role)
+
     if namespace:
-        query = query.filter(Role.namespace == namespace)
-    
+        stmt = stmt.where(Role.namespace == namespace)
+
     if system_id:
-        query = query.filter(Role.system_id == system_id)
-    
-    roles = query.all()
+        stmt = stmt.where(Role.system_id == system_id)
+
+    result = await db.execute(stmt)
+    roles = result.scalars().all()
     return roles
 
 
@@ -74,7 +76,7 @@ async def update_role_permissions(
     role_id: int,
     data: UpdateRolePermissions,
     current_user: dict = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """更新角色的权限"""
     role_service = RoleService(db)
@@ -88,7 +90,7 @@ async def assign_role_to_user(
     user_id: int,
     role_id: int,
     current_user: dict = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """为用户分配角色"""
     role_service = RoleService(db)
@@ -105,7 +107,7 @@ async def assign_role_to_user(
 async def create_permission(
     perm_data: PermissionCreate,
     current_user: dict = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """创建权限"""
     perm_service = PermissionService(db)
@@ -126,17 +128,18 @@ async def create_permission(
 @router.get("/permissions", response_model=list[PermissionResponse])
 async def list_permissions(
     namespace: Optional[str] = Query(None, description="命名空间过滤"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """获取权限列表"""
     from app.models.permission import Permission
-    
-    query = db.query(Permission)
-    
+
+    stmt = select(Permission)
+
     if namespace:
-        query = query.filter(Permission.namespace == namespace)
-    
-    permissions = query.all()
+        stmt = stmt.where(Permission.namespace == namespace)
+
+    result = await db.execute(stmt)
+    permissions = result.scalars().all()
     return permissions
 
 
@@ -146,7 +149,7 @@ async def list_permissions(
 async def create_route_pattern(
     route_data: RoutePatternCreate,
     current_user: dict = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """创建路由规则"""
     route_service = RoutePatternService(db)
@@ -166,17 +169,18 @@ async def create_route_pattern(
 @router.get("/routes")
 async def list_route_patterns(
     system_id: Optional[int] = Query(None, description="系统ID过滤"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """获取路由规则列表"""
     from app.models.route_pattern import RoutePattern
-    
-    query = db.query(RoutePattern)
-    
+
+    stmt = select(RoutePattern)
+
     if system_id:
-        query = query.filter(RoutePattern.system_id == system_id)
-    
-    routes = query.all()
+        stmt = stmt.where(RoutePattern.system_id == system_id)
+
+    result = await db.execute(stmt)
+    routes = result.scalars().all()
     return routes
 
 
@@ -186,7 +190,7 @@ async def list_route_patterns(
 async def create_resource_bindings(
     binding_data: ResourceBindingCreate,
     current_user: dict = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """批量创建资源绑定"""
     binding_service = ResourceBindingService(db)

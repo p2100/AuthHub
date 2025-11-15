@@ -18,7 +18,9 @@ from app import models  # 导入所有模型
 config = context.config
 
 # 从环境变量读取数据库URL
-config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
+# Alembic 需要使用同步驱动，所以将 asyncpg 转换为 psycopg2
+sync_database_url = settings.DATABASE_URL.replace('postgresql+asyncpg://', 'postgresql://')
+config.set_main_option('sqlalchemy.url', sync_database_url)
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:

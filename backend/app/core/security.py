@@ -1,17 +1,20 @@
 """安全相关工具"""
 import jwt
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 from app.core.config import settings
 from app.core.cache import redis_client
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
 
 
 class JWTHandler:
     """JWT处理器"""
-    
+
     def __init__(self):
         self.algorithm = settings.JWT_ALGORITHM
-        self.expire_minutes = settings.JWT_EXPIRE_MINUTES
+        self.expire_minutes = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
     
     def create_access_token(
         self,
@@ -145,6 +148,42 @@ class JWTHandler:
             是否在黑名单
         """
         return redis_client.exists(f"blacklist:{jti}") > 0
+
+
+def generate_rsa_keys(key_size: int = 2048) -> Tuple[str, str]:
+    """
+    生成RSA密钥对
+
+    Args:
+        key_size: 密钥长度，默认2048位
+
+    Returns:
+        (private_key_pem, public_key_pem): 私钥和公钥的PEM格式字符串
+    """
+    # 生成RSA私钥
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=key_size,
+        backend=default_backend()
+    )
+
+    # 获取私钥PEM格式
+    private_key_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    ).decode('utf-8')
+
+    # 获取公钥
+    public_key = private_key.public_key()
+
+    # 获取公钥PEM格式
+    public_key_pem = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    ).decode('utf-8')
+
+    return private_key_pem, public_key_pem
 
 
 # 全局实例

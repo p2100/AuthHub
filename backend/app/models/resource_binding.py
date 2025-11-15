@@ -17,7 +17,7 @@ class ResourceBinding(Base):
     resource_type = Column(String(50), nullable=False, comment="资源类型: project, team, document")
     resource_id = Column(String(100), nullable=False, comment="资源ID")
     action = Column(String(50), comment="操作: read, write, admin")
-    metadata = Column(JSON, comment="扩展字段")
+    extended_metadata = Column(JSON, comment="扩展字段")
     created_by = Column(Integer, ForeignKey('users.id'), comment="创建人ID")
     created_at = Column(DateTime, default=datetime.utcnow, comment="创建时间")
     expires_at = Column(DateTime, nullable=True, comment="过期时间")

@@ -1,6 +1,6 @@
 """系统管理API路由"""
 from fastapi import APIRouter, Depends, HTTPException, Header
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import require_admin, verify_system_token
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/systems", tags=["系统管理"])
 async def create_system(
     system_data: SystemCreate,
     current_user: dict = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     创建系统并生成系统Token
@@ -42,7 +42,7 @@ async def create_system(
 @router.get("", response_model=list[SystemResponse])
 async def list_systems(
     current_user: dict = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """获取系统列表"""
     system_service = SystemService(db)
@@ -54,7 +54,7 @@ async def list_systems(
 async def get_system(
     system_id: int,
     current_user: dict = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """获取系统详情"""
     system_service = SystemService(db)
@@ -70,7 +70,7 @@ async def get_system(
 async def get_system_config(
     system_id: int,
     x_system_token: str = Header(..., alias="X-System-Token"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     获取系统的权限配置
