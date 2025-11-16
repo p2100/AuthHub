@@ -33,3 +33,21 @@ class PublicKeyResponse(BaseModel):
     public_key: str
     algorithm: str = "RS256"
 
+
+class SSOLoginUrlRequest(BaseModel):
+    """SSO登录URL请求"""
+    redirect_uri: str = Field(..., description="回调URI")
+    state: Optional[str] = Field(None, description="状态参数(防CSRF)")
+
+
+class SSOLoginUrlResponse(BaseModel):
+    """SSO登录URL响应"""
+    login_url: str = Field(..., description="登录URL")
+    state: str = Field(..., description="状态参数")
+
+
+class SSOExchangeTokenRequest(BaseModel):
+    """SSO Token交换请求"""
+    code: str = Field(..., description="授权码")
+    state: Optional[str] = Field(None, description="状态参数")
+

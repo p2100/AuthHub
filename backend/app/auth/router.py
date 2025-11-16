@@ -1,15 +1,24 @@
 """认证API路由"""
 
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.feishu import feishu_client
+from app.core.cache import cache
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.logger import logger
 from app.core.security import jwt_handler
-from app.schemas.auth import PublicKeyResponse, TokenResponse
+from app.schemas.auth import (
+    PublicKeyResponse,
+    SSOExchangeTokenRequest,
+    SSOLoginUrlRequest,
+    SSOLoginUrlResponse,
+    TokenResponse,
+)
 from app.users.permission_collector import PermissionCollector
 from app.users.service import UserService
 
@@ -171,3 +180,113 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         用户信息
     """
     return current_user
+
+
+# ========== SSO 代理端点 ==========
+
+
+@router.post("/sso/login-url", response_model=SSOLoginUrlResponse)
+async def get_sso_login_url(request: SSOLoginUrlRequest):
+    """
+    获取 SSO 登录 URL（供 SDK 使用）
+
+    为业务系统提供统一的登录入口，无需直接对接飞书
+
+    Args:
+        request: 包含 redirect_uri 和可选的 state
+
+    Returns:
+        飞书授权 URL 和 state 参数
+    """
+    # 生成或使用提供的 state（防 CSRF）
+    state = request.state or secrets.token_urlsafe(32)
+
+    # 将 state 存储到 Redis（5分钟有效期）
+    state_key = f"sso:state:{state}"
+    cache.setex(state_key, 300, request.redirect_uri)  # 存储回调地址
+
+    logger.info(
+        f"[SSO] 生成登录 URL - state: {state[:10]}***, redirect_uri: {request.redirect_uri}"
+    )
+
+    # 构建飞书授权 URL
+    login_url = (
+        f"https://open.feishu.cn/open-apis/authen/v1/index"
+        f"?app_id={settings.FEISHU_APP_ID}"
+        f"&redirect_uri={request.redirect_uri}"
+        f"&state={state}"
+    )
+
+    return SSOLoginUrlResponse(login_url=login_url, state=state)
+
+
+@router.post("/sso/exchange-token", response_model=TokenResponse)
+async def exchange_sso_token(request: SSOExchangeTokenRequest, db: AsyncSession = Depends(get_db)):
+    """
+    用 OAuth code 交换 JWT Token（供 SDK 使用）
+
+    验证 state，获取用户信息，生成 JWT Token
+
+    Args:
+        request: 包含 code 和 state
+        db: 数据库会话
+
+    Returns:
+        JWT Token
+    """
+    logger.info(
+        f"[SSO] Token 交换请求 - code: {request.code[:10]}***, state: {request.state[:10] if request.state else 'None'}***"
+    )
+
+    # 验证 state（如果提供）
+    if request.state:
+        state_key = f"sso:state:{request.state}"
+        stored_redirect = cache.get(state_key)
+
+        if not stored_redirect:
+            logger.error(f"[SSO] State 验证失败 - state: {request.state[:10]}***")
+            raise HTTPException(status_code=400, detail="无效的 state 参数或已过期")
+
+        # 删除已使用的 state（一次性）
+        cache.delete(state_key)
+        logger.info(f"[SSO] State 验证通过 - redirect_uri: {stored_redirect}")
+
+    try:
+        # 1. 获取用户访问令牌
+        logger.info("[SSO] 步骤1: 获取用户访问令牌")
+        user_access_token = await feishu_client.get_user_access_token(request.code)
+
+        # 2. 获取用户信息
+        logger.info("[SSO] 步骤2: 获取用户信息")
+        user_info = await feishu_client.get_user_info(user_access_token)
+
+        # 3. 同步用户到数据库
+        logger.info(f"[SSO] 步骤3: 同步用户 - name: {user_info.get('name')}")
+        user_service = UserService(db)
+        user = await user_service.sync_user_from_feishu(user_info)
+
+        # 4. 收集用户完整权限
+        logger.info(f"[SSO] 步骤4: 收集权限 - user_id: {user.id}")
+        permission_collector = PermissionCollector(db)
+        user_permissions = await permission_collector.collect(user.id)
+
+        # 5. 生成 JWT Token
+        logger.info("[SSO] 步骤5: 生成 JWT Token")
+        token = jwt_handler.create_access_token(
+            user_id=user.id,
+            username=user.username,
+            email=user.email or "",
+            global_roles=user_permissions.get("global_roles", []),
+            system_roles=user_permissions.get("system_roles", {}),
+            global_resources=user_permissions.get("global_resources", {}),
+            system_resources=user_permissions.get("system_resources", {}),
+            dept_ids=user.dept_ids or [],
+            dept_names=user.dept_names or [],
+        )
+
+        logger.info(f"[SSO] ✅ Token 交换成功 - 用户: {user.username} (ID: {user.id})")
+        return TokenResponse(access_token=token, token_type="bearer", expires_in=3600)
+
+    except Exception as e:
+        logger.error(f"[SSO] ❌ Token 交换失败: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Token 交换失败: {str(e)}")

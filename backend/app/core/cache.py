@@ -64,3 +64,4 @@ class RedisCache:
 
 # 全局Redis客户端实例
 redis_client = RedisCache()
+cache = redis_client  # 别名，保持兼容性

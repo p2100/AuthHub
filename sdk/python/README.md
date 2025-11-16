@@ -4,6 +4,7 @@ AuthHub统一权限平台的Python SDK,提供本地Token验证和权限校验功
 
 ## 功能特性
 
+- ✅ **SSO 登录集成** - 一行代码接入飞书SSO登录
 - ✅ 本地Token验证(RS256)
 - ✅ 本地权限校验(零网络开销)
 - ✅ 配置自动同步
@@ -63,7 +64,44 @@ def create_document(user_info):
     pass
 ```
 
-### 3. FastAPI集成
+### 3. FastAPI SSO 登录集成(推荐)
+
+```python
+from fastapi import FastAPI, Request
+from authhub_sdk import AuthHubClient
+from authhub_sdk.middleware.fastapi_sso import setup_sso
+
+app = FastAPI()
+
+# 初始化客户端
+client = AuthHubClient(
+    authhub_url="http://localhost:8000",
+    system_id="1",
+    system_token="your_token",
+    namespace="system_a",
+    redis_url="redis://localhost:6379"
+)
+
+# 一行代码集成 SSO 登录！
+setup_sso(
+    app,
+    client=client,
+    login_required=True,
+    public_routes=['/health', '/docs']
+)
+
+@app.get("/dashboard")
+async def dashboard(request: Request):
+    user = request.state.user  # 自动注入用户信息
+    return {"user": user.get("username")}
+```
+
+**自动提供的路由:**
+- `GET /auth/login` - 触发SSO登录
+- `GET /auth/callback` - SSO回调处理(自动)
+- `GET/POST /auth/logout` - 登出
+
+### 4. FastAPI 权限验证集成
 
 ```python
 from fastapi import FastAPI
@@ -78,7 +116,7 @@ async def get_documents(request: Request):
     return {"documents": []}
 ```
 
-### 4. 手动验证
+### 5. 手动验证
 
 ```python
 token = "eyJhbGc..."
