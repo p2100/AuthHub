@@ -4,10 +4,22 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiDelete } from '@/utils/api'
 import type { Permission, RoutePattern, ResourceBinding } from '@/types/api'
+import CreatePermissionModal from './components/CreatePermissionModal'
+import CreateRouteModal from './components/CreateRouteModal'
+import EditPermissionModal from './components/EditPermissionModal'
+import EditRouteModal from './components/EditRouteModal'
+import CreateResourceBindingModal from './components/CreateResourceBindingModal'
 
 const PermissionList = () => {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState('permissions')
+  const [createPermissionModalVisible, setCreatePermissionModalVisible] = useState(false)
+  const [createRouteModalVisible, setCreateRouteModalVisible] = useState(false)
+  const [editPermissionModalVisible, setEditPermissionModalVisible] = useState(false)
+  const [editRouteModalVisible, setEditRouteModalVisible] = useState(false)
+  const [createResourceBindingModalVisible, setCreateResourceBindingModalVisible] = useState(false)
+  const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null)
+  const [selectedRoute, setSelectedRoute] = useState<RoutePattern | null>(null)
 
   // 获取权限列表
   const { data: permissions, isLoading: permissionsLoading } = useQuery<Permission[]>({
@@ -65,6 +77,16 @@ const PermissionList = () => {
       message.error(`删除失败: ${error.message}`)
     },
   })
+
+  const handleEditPermission = (permission: Permission) => {
+    setSelectedPermission(permission)
+    setEditPermissionModalVisible(true)
+  }
+
+  const handleEditRoute = (route: RoutePattern) => {
+    setSelectedRoute(route)
+    setEditRouteModalVisible(true)
+  }
 
   const handleDeletePermission = (permission: Permission) => {
     Modal.confirm({
@@ -136,7 +158,12 @@ const PermissionList = () => {
       key: 'action_buttons',
       render: (_: any, record: Permission) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EditOutlined />}>
+          <Button 
+            type="link" 
+            size="small" 
+            icon={<EditOutlined />}
+            onClick={() => handleEditPermission(record)}
+          >
             编辑
           </Button>
           <Button
@@ -185,7 +212,12 @@ const PermissionList = () => {
       key: 'action',
       render: (_: any, record: RoutePattern) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EditOutlined />}>
+          <Button 
+            type="link" 
+            size="small" 
+            icon={<EditOutlined />}
+            onClick={() => handleEditRoute(record)}
+          >
             编辑
           </Button>
           <Button
@@ -260,7 +292,11 @@ const PermissionList = () => {
       children: (
         <div>
           <div style={{ marginBottom: 16 }}>
-            <Button type="primary" icon={<PlusOutlined />}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => setCreatePermissionModalVisible(true)}
+            >
               创建权限
             </Button>
           </div>
@@ -279,7 +315,11 @@ const PermissionList = () => {
       children: (
         <div>
           <div style={{ marginBottom: 16 }}>
-            <Button type="primary" icon={<PlusOutlined />}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => setCreateRouteModalVisible(true)}
+            >
               创建路由规则
             </Button>
           </div>
@@ -296,12 +336,23 @@ const PermissionList = () => {
       key: 'bindings',
       label: '资源绑定',
       children: (
-        <Table
-          columns={bindingColumns}
-          dataSource={bindings || []}
-          rowKey="id"
-          loading={bindingsLoading}
-        />
+        <div>
+          <div style={{ marginBottom: 16 }}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => setCreateResourceBindingModalVisible(true)}
+            >
+              创建资源绑定
+            </Button>
+          </div>
+          <Table
+            columns={bindingColumns}
+            dataSource={bindings || []}
+            rowKey="id"
+            loading={bindingsLoading}
+          />
+        </div>
       ),
     },
   ]
@@ -310,6 +361,59 @@ const PermissionList = () => {
     <div>
       <h1>权限管理</h1>
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} style={{ marginTop: 16 }} />
+
+      {/* 创建权限Modal */}
+      <CreatePermissionModal
+        visible={createPermissionModalVisible}
+        onClose={() => setCreatePermissionModalVisible(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['permissions'] })
+        }}
+      />
+
+      {/* 创建路由规则Modal */}
+      <CreateRouteModal
+        visible={createRouteModalVisible}
+        onClose={() => setCreateRouteModalVisible(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['routes'] })
+        }}
+      />
+
+      {/* 编辑权限Modal */}
+      <EditPermissionModal
+        visible={editPermissionModalVisible}
+        permission={selectedPermission}
+        onClose={() => {
+          setEditPermissionModalVisible(false)
+          setSelectedPermission(null)
+        }}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['permissions'] })
+        }}
+      />
+
+      {/* 编辑路由规则Modal */}
+      <EditRouteModal
+        visible={editRouteModalVisible}
+        route={selectedRoute}
+        onClose={() => {
+          setEditRouteModalVisible(false)
+          setSelectedRoute(null)
+        }}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['routes'] })
+        }}
+      />
+
+      {/* 创建资源绑定Modal */}
+      <CreateResourceBindingModal
+        visible={createResourceBindingModalVisible}
+        onClose={() => setCreateResourceBindingModalVisible(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['resource-bindings'] })
+        }}
+      />
     </div>
   )
 }
