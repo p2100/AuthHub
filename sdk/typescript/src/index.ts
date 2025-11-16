@@ -1,28 +1,29 @@
 /**
- * AuthHub TypeScript SDK
+ * AuthHub TypeScript SDK (轻量版)
+ * 
+ * 适用于前后端分离架构
+ * 核心逻辑在后端，前端只提供辅助工具
  */
 
-export { AuthHubClient } from './client';
+// 核心客户端
+export { AuthClient } from './auth-client';
+export type { AuthConfig, User } from './auth-client';
+
+// React 支持
+export { useAuth } from './hooks/useAuth';
+export type { UseAuthOptions as UseAuthOptionsReact, UseAuthResult } from './hooks/useAuth';
+
+// Vue 支持
+export { useAuth as useAuthVue } from './composables/useAuth';
+export type { UseAuthOptions as UseAuthOptionsVue } from './composables/useAuth';
+
+// 类型定义
+export * from './types';
+
+// 兼容旧版 - 权限验证相关（仅用于后端 Token 验证场景）
 export { TokenVerifier } from './verifier';
 export { PermissionChecker } from './checker';
-export * from './types';
 export * from './exceptions';
 
-// SSO
-export { SSOClient } from './sso';
-export { TokenManager } from './tokenManager';
-
-// React Hooks (仅在React环境)
-export * from './hooks';
-
-// Vue Composables (仅在Vue环境)
-export * from './composables';
-
-// React Components
-export * from './components';
-
-// 中间件
-export * from './middleware';
-
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 

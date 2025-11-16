@@ -1,59 +1,96 @@
 /**
- * useAuth Hook
+ * React 认证 Hook (轻量版)
  */
 
-import { useState, useEffect } from 'react';
-import type { TokenPayload } from '../types';
+import { useState, useEffect, useCallback } from 'react';
+import { AuthClient } from '../auth-client';
+import type { User } from '../types';
 
-// 全局客户端实例(需要在应用初始化时设置)
-let globalClient: any = null;
-
-export function initClient(client: any) {
-  globalClient = client;
+export interface UseAuthOptions {
+  backendUrl: string;
+  loginPath?: string;
+  logoutPath?: string;
+  mePath?: string;
+  onLogout?: () => void;
 }
 
-export function useAuth() {
-  const [user, setUser] = useState<TokenPayload | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export interface UseAuthResult {
+  user: User | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  login: (returnUrl?: string) => void;
+  logout: () => Promise<void>;
+  refresh: () => Promise<void>;
+}
+
+/**
+ * 认证 Hook
+ * 
+ * @example
+ * ```tsx
+ * function App() {
+ *   const { user, loading, isAuthenticated, login, logout } = useAuth({
+ *     backendUrl: 'http://localhost:8001'
+ *   });
+ * 
+ *   if (loading) return <div>Loading...</div>;
+ *   
+ *   if (!isAuthenticated) {
+ *     return <button onClick={() => login()}>登录</button>;
+ *   }
+ * 
+ *   return (
+ *     <div>
+ *       <p>欢迎, {user?.username}</p>
+ *       <button onClick={logout}>登出</button>
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
+export function useAuth(options: UseAuthOptions): UseAuthResult {
+  const [client] = useState(() => new AuthClient(options));
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const currentUser = await client.getCurrentUser();
+      setUser(currentUser);
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      setUser(null);
+    }
+  }, [client]);
 
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        // 从localStorage获取token
-        const token = localStorage.getItem('authhub_token');
-        if (token && globalClient) {
-          const userInfo = await globalClient.verifyToken(token);
-          setUser(userInfo);
-        }
-      } catch (error) {
-        console.error('验证Token失败:', error);
-        localStorage.removeItem('authhub_token');
-      } finally {
-        setIsLoading(false);
-      }
+    const init = async () => {
+      setLoading(true);
+      await refresh();
+      setLoading(false);
     };
+    init();
+  }, [refresh]);
 
-    loadUser();
-  }, []);
+  const login = useCallback(
+    (returnUrl?: string) => {
+      client.login(returnUrl || window.location.pathname);
+    },
+    [client]
+  );
 
-  const login = (token: string) => {
-    localStorage.setItem('authhub_token', token);
-    if (globalClient) {
-      globalClient.verifyToken(token).then(setUser);
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('authhub_token');
+  const logout = useCallback(async () => {
+    await client.logout();
     setUser(null);
-  };
+    options.onLogout?.();
+  }, [client, options]);
 
   return {
     user,
-    isAuthenticated: !!user,
-    isLoading,
+    loading,
+    isAuthenticated: user !== null,
     login,
     logout,
+    refresh,
   };
 }
-

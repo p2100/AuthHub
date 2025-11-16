@@ -1,60 +1,56 @@
 /**
- * 类型定义
+ * AuthHub SDK Types (轻量版)
  */
 
-export interface AuthHubOptions {
-  authhubUrl: string;
-  systemId: string;
-  systemToken: string;
-  namespace: string;
-  redisUrl?: string;
-  enableCache?: boolean;
-  syncInterval?: number;
-}
-
-export interface TokenPayload {
+export interface User {
   sub: string;
-  user_type: 'user' | 'system';
-  username?: string;
+  username: string;
   email?: string;
+  global_roles?: string[];
+  system_roles?: Record<string, string[]>;
   dept_ids?: number[];
   dept_names?: string[];
-  global_roles: string[];
-  system_roles: Record<string, string[]>;
-  global_resources: Record<string, number[]>;
-  system_resources: Record<string, Record<string, number[]>>;
-  iat: number;
+}
+
+export interface AuthConfig {
+  backendUrl: string;
+  loginPath?: string;
+  logoutPath?: string;
+  mePath?: string;
+}
+
+// 兼容旧版类型（用于权限验证 SDK）
+export interface TokenPayload extends User {
+  global_resources?: Record<string, number[]>;
+  system_resources?: Record<string, Record<string, number[]>>;
   exp: number;
+  iat: number;
   jti: string;
+  email: string; // 必填
+  global_roles: string[]; // 必填
 }
 
 export interface PermissionConfig {
   version: string;
-  updated_at: number;
-  namespace: string;
   roles: Record<string, RoleConfig>;
-  permissions: Record<string, PermissionInfo>;
-  route_patterns: RoutePattern[];
+  routes: RouteConfig[];
 }
 
 export interface RoleConfig {
   id: number;
+  code: string;
   name: string;
-  description?: string;
-  permissions: string[];
+  permissions: PermissionItem[];
 }
 
-export interface PermissionInfo {
+export interface PermissionItem {
+  resource: string;
+  actions: string[];
+}
+
+export interface RouteConfig {
   id: number;
-  name: string;
-  resource_type: string;
-  action: string;
-}
-
-export interface RoutePattern {
-  role: string;
-  pattern: string;
+  path: string;
   method: string;
-  priority: number;
+  roles: string[];
 }
-
