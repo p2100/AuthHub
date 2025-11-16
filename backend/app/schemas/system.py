@@ -41,3 +41,15 @@ class SystemConfigResponse(BaseModel):
     permissions: Dict[str, Dict]
     route_patterns: List[Dict]
 
+
+class SystemUpdate(BaseModel):
+    """更新系统"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    api_endpoint: Optional[str] = None
+
+
+class SystemStatusUpdate(BaseModel):
+    """更新系统状态"""
+    status: str = Field(..., description="状态: active, inactive")
+

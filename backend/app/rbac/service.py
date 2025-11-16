@@ -1,9 +1,12 @@
 """RBAC服务"""
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
+from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from app.models.role import Role
 from app.models.permission import Permission, RolePermission
 from app.models.user_role import UserRole
+from app.models.user import User
 from app.models.route_pattern import RoutePattern
 from app.models.resource_binding import ResourceBinding
 from app.rbac.notifier import permission_notifier
@@ -12,10 +15,10 @@ from app.rbac.notifier import permission_notifier
 class RoleService:
     """角色服务"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
     
-    def create_role(
+    async def create_role(
         self,
         code: str,
         name: str,
@@ -32,24 +35,85 @@ class RoleService:
             description=description
         )
         self.db.add(role)
-        self.db.commit()
-        self.db.refresh(role)
+        await self.db.commit()
+        await self.db.refresh(role)
         
         # 通知权限变更
         permission_notifier.notify_role_created(role)
         
         return role
     
-    def update_role_permissions(self, role_id: int, permission_ids: List[int]):
+    async def get_role_by_id(self, role_id: int) -> Optional[Role]:
+        """根据ID获取角色"""
+        result = await self.db.execute(select(Role).filter(Role.id == role_id))
+        return result.scalar_one_or_none()
+    
+    async def update_role(
+        self,
+        role_id: int,
+        name: Optional[str] = None,
+        description: Optional[str] = None
+    ) -> Optional[Role]:
+        """更新角色信息"""
+        result = await self.db.execute(select(Role).filter(Role.id == role_id))
+        role = result.scalar_one_or_none()
+        
+        if role:
+            if name is not None:
+                role.name = name
+            if description is not None:
+                role.description = description
+            
+            await self.db.commit()
+            await self.db.refresh(role)
+        
+        return role
+    
+    async def delete_role(self, role_id: int) -> bool:
+        """删除角色"""
+        result = await self.db.execute(select(Role).filter(Role.id == role_id))
+        role = result.scalar_one_or_none()
+        
+        if not role:
+            return False
+        
+        # 删除角色权限关联
+        await self.db.execute(
+            delete(RolePermission).where(RolePermission.role_id == role_id)
+        )
+        
+        # 删除用户角色关联
+        await self.db.execute(
+            delete(UserRole).where(UserRole.role_id == role_id)
+        )
+        
+        # 删除角色
+        await self.db.delete(role)
+        await self.db.commit()
+        
+        return True
+    
+    async def get_role_users(self, role_id: int) -> List[User]:
+        """获取拥有该角色的用户列表"""
+        result = await self.db.execute(
+            select(User)
+            .join(UserRole, UserRole.user_id == User.id)
+            .filter(UserRole.role_id == role_id)
+            .order_by(UserRole.created_at.desc())
+        )
+        return list(result.scalars().all())
+    
+    async def update_role_permissions(self, role_id: int, permission_ids: List[int]):
         """更新角色权限"""
-        role = self.db.query(Role).get(role_id)
+        result = await self.db.execute(select(Role).filter(Role.id == role_id))
+        role = result.scalar_one_or_none()
         if not role:
             return
         
         # 删除旧的权限关联
-        self.db.query(RolePermission).filter(
-            RolePermission.role_id == role_id
-        ).delete()
+        await self.db.execute(
+            delete(RolePermission).where(RolePermission.role_id == role_id)
+        )
         
         # 添加新的权限关联
         for perm_id in permission_ids:
@@ -59,12 +123,12 @@ class RoleService:
             )
             self.db.add(role_perm)
         
-        self.db.commit()
+        await self.db.commit()
         
         # 通知权限变更
         permission_notifier.notify_role_permissions_updated(role)
     
-    def assign_role_to_user(self, user_id: int, role_id: int, created_by: Optional[int] = None):
+    async def assign_role_to_user(self, user_id: int, role_id: int, created_by: Optional[int] = None):
         """为用户分配角色"""
         user_role = UserRole(
             user_id=user_id,
@@ -72,19 +136,35 @@ class RoleService:
             created_by=created_by
         )
         self.db.add(user_role)
-        self.db.commit()
+        await self.db.commit()
         
         # 通知用户权限变更
         permission_notifier.notify_user_permissions_changed(user_id)
+    
+    async def remove_role_from_user(self, user_id: int, role_id: int) -> bool:
+        """移除用户角色"""
+        result = await self.db.execute(
+            delete(UserRole).where(
+                UserRole.user_id == user_id,
+                UserRole.role_id == role_id
+            )
+        )
+        await self.db.commit()
+        
+        # 通知用户权限变更
+        if result.rowcount > 0:
+            permission_notifier.notify_user_permissions_changed(user_id)
+            return True
+        return False
 
 
 class PermissionService:
     """权限服务"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
     
-    def create_permission(
+    async def create_permission(
         self,
         code: str,
         name: str,
@@ -105,19 +185,70 @@ class PermissionService:
             description=description
         )
         self.db.add(permission)
-        self.db.commit()
-        self.db.refresh(permission)
+        await self.db.commit()
+        await self.db.refresh(permission)
         
         return permission
+    
+    async def get_permission_by_id(self, permission_id: int) -> Optional[Permission]:
+        """根据ID获取权限"""
+        result = await self.db.execute(select(Permission).filter(Permission.id == permission_id))
+        return result.scalar_one_or_none()
+    
+    async def update_permission(
+        self,
+        permission_id: int,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        action: Optional[str] = None
+    ) -> Optional[Permission]:
+        """更新权限"""
+        result = await self.db.execute(select(Permission).filter(Permission.id == permission_id))
+        permission = result.scalar_one_or_none()
+        
+        if permission:
+            if name is not None:
+                permission.name = name
+            if description is not None:
+                permission.description = description
+            if resource_type is not None:
+                permission.resource_type = resource_type
+            if action is not None:
+                permission.action = action
+            
+            await self.db.commit()
+            await self.db.refresh(permission)
+        
+        return permission
+    
+    async def delete_permission(self, permission_id: int) -> bool:
+        """删除权限"""
+        result = await self.db.execute(select(Permission).filter(Permission.id == permission_id))
+        permission = result.scalar_one_or_none()
+        
+        if not permission:
+            return False
+        
+        # 删除权限与角色的关联
+        await self.db.execute(
+            delete(RolePermission).where(RolePermission.permission_id == permission_id)
+        )
+        
+        # 删除权限
+        await self.db.delete(permission)
+        await self.db.commit()
+        
+        return True
 
 
 class RoutePatternService:
     """路由规则服务"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
     
-    def create_route_pattern(
+    async def create_route_pattern(
         self,
         system_id: int,
         role_id: int,
@@ -136,19 +267,64 @@ class RoutePatternService:
             description=description
         )
         self.db.add(route)
-        self.db.commit()
-        self.db.refresh(route)
+        await self.db.commit()
+        await self.db.refresh(route)
         
         return route
+    
+    async def get_route_pattern_by_id(self, route_id: int) -> Optional[RoutePattern]:
+        """根据ID获取路由规则"""
+        result = await self.db.execute(select(RoutePattern).filter(RoutePattern.id == route_id))
+        return result.scalar_one_or_none()
+    
+    async def update_route_pattern(
+        self,
+        route_id: int,
+        pattern: Optional[str] = None,
+        method: Optional[str] = None,
+        priority: Optional[int] = None,
+        description: Optional[str] = None
+    ) -> Optional[RoutePattern]:
+        """更新路由规则"""
+        result = await self.db.execute(select(RoutePattern).filter(RoutePattern.id == route_id))
+        route = result.scalar_one_or_none()
+        
+        if route:
+            if pattern is not None:
+                route.pattern = pattern
+            if method is not None:
+                route.method = method
+            if priority is not None:
+                route.priority = priority
+            if description is not None:
+                route.description = description
+            
+            await self.db.commit()
+            await self.db.refresh(route)
+        
+        return route
+    
+    async def delete_route_pattern(self, route_id: int) -> bool:
+        """删除路由规则"""
+        result = await self.db.execute(select(RoutePattern).filter(RoutePattern.id == route_id))
+        route = result.scalar_one_or_none()
+        
+        if not route:
+            return False
+        
+        await self.db.delete(route)
+        await self.db.commit()
+        
+        return True
 
 
 class ResourceBindingService:
     """资源绑定服务"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
     
-    def create_binding(
+    async def create_binding(
         self,
         user_id: int,
         namespace: str,
@@ -169,15 +345,15 @@ class ResourceBindingService:
             created_by=created_by
         )
         self.db.add(binding)
-        self.db.commit()
-        self.db.refresh(binding)
+        await self.db.commit()
+        await self.db.refresh(binding)
         
         # 通知用户权限变更
         permission_notifier.notify_user_permissions_changed(user_id)
         
         return binding
     
-    def batch_create_bindings(
+    async def batch_create_bindings(
         self,
         user_id: int,
         namespace: str,
@@ -200,10 +376,51 @@ class ResourceBindingService:
                 created_by=created_by
             )
             bindings.append(binding)
+            self.db.add(binding)
         
-        self.db.bulk_save_objects(bindings)
-        self.db.commit()
+        await self.db.commit()
         
         # 通知用户权限变更
         permission_notifier.notify_user_permissions_changed(user_id)
+    
+    async def list_bindings(
+        self,
+        user_id: Optional[int] = None,
+        system_id: Optional[int] = None,
+        namespace: Optional[str] = None
+    ) -> List[ResourceBinding]:
+        """获取资源绑定列表"""
+        stmt = select(ResourceBinding)
+        
+        if user_id is not None:
+            stmt = stmt.filter(ResourceBinding.user_id == user_id)
+        if system_id is not None:
+            stmt = stmt.filter(ResourceBinding.system_id == system_id)
+        if namespace is not None:
+            stmt = stmt.filter(ResourceBinding.namespace == namespace)
+        
+        stmt = stmt.order_by(ResourceBinding.created_at.desc())
+        
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+    
+    async def delete_binding(self, binding_id: int) -> bool:
+        """删除资源绑定"""
+        result = await self.db.execute(
+            select(ResourceBinding).filter(ResourceBinding.id == binding_id)
+        )
+        binding = result.scalar_one_or_none()
+        
+        if not binding:
+            return False
+        
+        user_id = binding.user_id
+        await self.db.delete(binding)
+        await self.db.commit()
+        
+        # 通知用户权限变更
+        permission_notifier.notify_user_permissions_changed(user_id)
+        
+        return True
+
 

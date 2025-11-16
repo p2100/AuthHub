@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.auth.router import router as auth_router
 from app.systems.router import router as systems_router
 from app.rbac.router import router as rbac_router
+from app.users.router import router as users_router
 
 
 @asynccontextmanager
@@ -45,6 +46,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(systems_router, prefix="/api/v1")
 app.include_router(rbac_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
 
 
 @app.get("/")

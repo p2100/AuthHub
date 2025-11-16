@@ -4,7 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import require_admin, verify_system_token
-from app.schemas.system import SystemCreate, SystemResponse, SystemWithToken, SystemConfigResponse
+from app.schemas.system import (
+    SystemCreate,
+    SystemResponse,
+    SystemWithToken,
+    SystemConfigResponse,
+    SystemUpdate,
+    SystemStatusUpdate,
+)
+from app.schemas.rbac import RoleResponse, PermissionResponse
 from app.systems.service import SystemService, ConfigSyncService
 
 router = APIRouter(prefix="/systems", tags=["系统管理"])
@@ -24,12 +32,12 @@ async def create_system(
     system_service = SystemService(db)
     
     # 检查系统代码是否已存在
-    existing = system_service.get_system_by_code(system_data.code)
+    existing = await system_service.get_system_by_code(system_data.code)
     if existing:
         raise HTTPException(status_code=400, detail="系统代码已存在")
     
     # 创建系统
-    system = system_service.create_system(
+    system = await system_service.create_system(
         code=system_data.code,
         name=system_data.name,
         description=system_data.description,
@@ -46,7 +54,7 @@ async def list_systems(
 ):
     """获取系统列表"""
     system_service = SystemService(db)
-    systems = system_service.list_systems()
+    systems = await system_service.list_systems()
     return systems
 
 
@@ -58,7 +66,7 @@ async def get_system(
 ):
     """获取系统详情"""
     system_service = SystemService(db)
-    system = system_service.get_system_by_id(system_id)
+    system = await system_service.get_system_by_id(system_id)
     
     if not system:
         raise HTTPException(status_code=404, detail="系统不存在")
@@ -83,7 +91,7 @@ async def get_system_config(
     
     # 获取系统
     system_service = SystemService(db)
-    system = system_service.get_system_by_id(system_id)
+    system = await system_service.get_system_by_id(system_id)
     
     if not system:
         raise HTTPException(status_code=404, detail="系统不存在")
@@ -94,7 +102,122 @@ async def get_system_config(
     
     # 获取配置
     config_service = ConfigSyncService(db)
-    config = config_service.get_system_config(system)
+    config = await config_service.get_system_config(system)
     
     return config
+
+
+@router.put("/{system_id}", response_model=SystemResponse)
+async def update_system(
+    system_id: int,
+    system_data: SystemUpdate,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    更新系统信息
+    
+    需要管理员权限
+    """
+    system_service = SystemService(db)
+    system = await system_service.update_system(
+        system_id=system_id,
+        name=system_data.name,
+        description=system_data.description,
+        api_endpoint=system_data.api_endpoint,
+    )
+    
+    if not system:
+        raise HTTPException(status_code=404, detail="系统不存在")
+    
+    return system
+
+
+@router.put("/{system_id}/status", response_model=SystemResponse)
+async def update_system_status(
+    system_id: int,
+    status_update: SystemStatusUpdate,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    更新系统状态
+    
+    需要管理员权限
+    """
+    # 验证状态值
+    if status_update.status not in ["active", "inactive"]:
+        raise HTTPException(status_code=400, detail="无效的状态值")
+    
+    system_service = SystemService(db)
+    system = await system_service.update_system_status(system_id, status_update.status)
+    
+    if not system:
+        raise HTTPException(status_code=404, detail="系统不存在")
+    
+    return system
+
+
+@router.post("/{system_id}/token/regenerate", response_model=SystemWithToken)
+async def regenerate_system_token(
+    system_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    重新生成系统Token
+    
+    需要管理员权限
+    """
+    system_service = SystemService(db)
+    system = await system_service.regenerate_system_token(system_id)
+    
+    if not system:
+        raise HTTPException(status_code=404, detail="系统不存在")
+    
+    return system
+
+
+@router.get("/{system_id}/roles", response_model=list[RoleResponse])
+async def get_system_roles(
+    system_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取系统的角色列表
+    
+    需要管理员权限
+    """
+    system_service = SystemService(db)
+    
+    # 检查系统是否存在
+    system = await system_service.get_system_by_id(system_id)
+    if not system:
+        raise HTTPException(status_code=404, detail="系统不存在")
+    
+    roles = await system_service.get_system_roles(system_id)
+    return roles
+
+
+@router.get("/{system_id}/permissions", response_model=list[PermissionResponse])
+async def get_system_permissions(
+    system_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取系统的权限列表
+    
+    需要管理员权限
+    """
+    system_service = SystemService(db)
+    
+    # 检查系统是否存在
+    system = await system_service.get_system_by_id(system_id)
+    if not system:
+        raise HTTPException(status_code=404, detail="系统不存在")
+    
+    permissions = await system_service.get_system_permissions(system_id)
+    return permissions
 

@@ -79,7 +79,7 @@ async def create_role(
     else:
         code = f"{role_data.namespace}:{role_data.code}"
 
-    role = role_service.create_role(
+    role = await role_service.create_role(
         code=code,
         name=role_data.name,
         namespace=role_data.namespace,
@@ -112,6 +112,81 @@ async def list_roles(
     return roles
 
 
+@router.get("/roles/{role_id}", response_model=RoleResponse)
+async def get_role(
+    role_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取角色详情"""
+    role_service = RoleService(db)
+    role = await role_service.get_role_by_id(role_id)
+    
+    if not role:
+        raise HTTPException(status_code=404, detail="角色不存在")
+    
+    return role
+
+
+@router.put("/roles/{role_id}", response_model=RoleResponse)
+async def update_role(
+    role_id: int,
+    role_data: UpdateRolePermissions,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """更新角色信息"""
+    from app.schemas.rbac import RoleUpdate
+    
+    role_service = RoleService(db)
+    role = await role_service.update_role(
+        role_id=role_id,
+        name=role_data.name if hasattr(role_data, 'name') else None,
+        description=role_data.description if hasattr(role_data, 'description') else None,
+    )
+    
+    if not role:
+        raise HTTPException(status_code=404, detail="角色不存在")
+    
+    return role
+
+
+@router.delete("/roles/{role_id}")
+async def delete_role(
+    role_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除角色"""
+    role_service = RoleService(db)
+    success = await role_service.delete_role(role_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="角色不存在")
+    
+    return {"message": "角色删除成功"}
+
+
+@router.get("/roles/{role_id}/users", response_model=list[dict])
+async def get_role_users(
+    role_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取拥有该角色的用户列表"""
+    from app.schemas.user import UserResponse
+    
+    role_service = RoleService(db)
+    
+    # 检查角色是否存在
+    role = await role_service.get_role_by_id(role_id)
+    if not role:
+        raise HTTPException(status_code=404, detail="角色不存在")
+    
+    users = await role_service.get_role_users(role_id)
+    return [UserResponse.model_validate(user).model_dump() for user in users]
+
+
 @router.put("/roles/{role_id}/permissions")
 async def update_role_permissions(
     role_id: int,
@@ -121,7 +196,7 @@ async def update_role_permissions(
 ):
     """更新角色的权限"""
     role_service = RoleService(db)
-    role_service.update_role_permissions(role_id, data.permission_ids)
+    await role_service.update_role_permissions(role_id, data.permission_ids)
 
     return {"message": "权限更新成功"}
 
@@ -137,9 +212,26 @@ async def assign_role_to_user(
     role_service = RoleService(db)
     creator_id = int(current_user.get("sub", 0))
 
-    role_service.assign_role_to_user(user_id, role_id, creator_id)
+    await role_service.assign_role_to_user(user_id, role_id, creator_id)
 
     return {"message": "角色分配成功"}
+
+
+@router.delete("/users/{user_id}/roles/{role_id}")
+async def remove_role_from_user(
+    user_id: int,
+    role_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """移除用户角色"""
+    role_service = RoleService(db)
+    success = await role_service.remove_role_from_user(user_id, role_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="用户角色关系不存在")
+    
+    return {"message": "角色移除成功"}
 
 
 # ========== 权限管理 ==========
@@ -154,7 +246,7 @@ async def create_permission(
     """创建权限"""
     perm_service = PermissionService(db)
 
-    permission = perm_service.create_permission(
+    permission = await perm_service.create_permission(
         code=perm_data.code,
         name=perm_data.name,
         namespace=perm_data.namespace,
@@ -165,6 +257,47 @@ async def create_permission(
     )
 
     return permission
+
+
+@router.put("/permissions/{permission_id}", response_model=PermissionResponse)
+async def update_permission(
+    permission_id: int,
+    perm_data: PermissionCreate,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """更新权限"""
+    from app.schemas.api import PermissionUpdate
+    
+    perm_service = PermissionService(db)
+    permission = await perm_service.update_permission(
+        permission_id=permission_id,
+        name=perm_data.name if hasattr(perm_data, 'name') else None,
+        description=perm_data.description if hasattr(perm_data, 'description') else None,
+        resource_type=perm_data.resource_type if hasattr(perm_data, 'resource_type') else None,
+        action=perm_data.action if hasattr(perm_data, 'action') else None,
+    )
+    
+    if not permission:
+        raise HTTPException(status_code=404, detail="权限不存在")
+    
+    return permission
+
+
+@router.delete("/permissions/{permission_id}")
+async def delete_permission(
+    permission_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除权限"""
+    perm_service = PermissionService(db)
+    success = await perm_service.delete_permission(permission_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="权限不存在")
+    
+    return {"message": "权限删除成功"}
 
 
 @router.get("/permissions", response_model=list[PermissionResponse])
@@ -197,7 +330,7 @@ async def create_route_pattern(
     """创建路由规则"""
     route_service = RoutePatternService(db)
 
-    route = route_service.create_route_pattern(
+    route = await route_service.create_route_pattern(
         system_id=route_data.system_id,
         role_id=route_data.role_id,
         pattern=route_data.pattern,
@@ -207,6 +340,47 @@ async def create_route_pattern(
     )
 
     return route
+
+
+@router.put("/routes/{route_id}")
+async def update_route_pattern(
+    route_id: int,
+    route_data: RoutePatternCreate,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """更新路由规则"""
+    from app.schemas.api import RoutePatternUpdate
+    
+    route_service = RoutePatternService(db)
+    route = await route_service.update_route_pattern(
+        route_id=route_id,
+        pattern=route_data.pattern if hasattr(route_data, 'pattern') else None,
+        method=route_data.method if hasattr(route_data, 'method') else None,
+        priority=route_data.priority if hasattr(route_data, 'priority') else None,
+        description=route_data.description if hasattr(route_data, 'description') else None,
+    )
+    
+    if not route:
+        raise HTTPException(status_code=404, detail="路由规则不存在")
+    
+    return route
+
+
+@router.delete("/routes/{route_id}")
+async def delete_route_pattern(
+    route_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除路由规则"""
+    route_service = RoutePatternService(db)
+    success = await route_service.delete_route_pattern(route_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="路由规则不存在")
+    
+    return {"message": "路由规则删除成功"}
 
 
 @router.get("/routes")
@@ -230,6 +404,25 @@ async def list_route_patterns(
 # ========== 资源绑定 ==========
 
 
+@router.get("/resource-bindings")
+async def list_resource_bindings(
+    user_id: Optional[int] = Query(None, description="用户ID筛选"),
+    system_id: Optional[int] = Query(None, description="系统ID筛选"),
+    namespace: Optional[str] = Query(None, description="命名空间筛选"),
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取资源绑定列表"""
+    binding_service = ResourceBindingService(db)
+    bindings = await binding_service.list_bindings(
+        user_id=user_id,
+        system_id=system_id,
+        namespace=namespace,
+    )
+    
+    return bindings
+
+
 @router.post("/resource-bindings")
 async def create_resource_bindings(
     binding_data: ResourceBindingCreate,
@@ -240,7 +433,7 @@ async def create_resource_bindings(
     binding_service = ResourceBindingService(db)
     creator_id = int(current_user.get("sub", 0))
 
-    binding_service.batch_create_bindings(
+    await binding_service.batch_create_bindings(
         user_id=binding_data.user_id,
         namespace=binding_data.namespace,
         resource_type=binding_data.resource_type,
@@ -251,3 +444,19 @@ async def create_resource_bindings(
     )
 
     return {"message": f"成功绑定{len(binding_data.resource_ids)}个资源"}
+
+
+@router.delete("/resource-bindings/{binding_id}")
+async def delete_resource_binding(
+    binding_id: int,
+    current_user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除资源绑定"""
+    binding_service = ResourceBindingService(db)
+    success = await binding_service.delete_binding(binding_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="资源绑定不存在")
+    
+    return {"message": "资源绑定删除成功"}

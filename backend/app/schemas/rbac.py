@@ -82,3 +82,48 @@ class StatsResponse(BaseModel):
     user_count: int = Field(..., description="用户总数")
     role_count: int = Field(..., description="角色总数")
 
+
+class RoleUpdate(BaseModel):
+    """更新角色"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class RoutePatternResponse(BaseModel):
+    """路由规则响应"""
+    id: int
+    system_id: int
+    role_id: int
+    pattern: str
+    method: str
+    priority: int
+    description: Optional[str]
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class RoutePatternUpdate(BaseModel):
+    """更新路由规则"""
+    pattern: Optional[str] = None
+    method: Optional[str] = None
+    priority: Optional[int] = None
+    description: Optional[str] = None
+
+
+class ResourceBindingResponse(BaseModel):
+    """资源绑定响应"""
+    id: int
+    user_id: int
+    namespace: str
+    resource_type: str
+    resource_id: str
+    system_id: Optional[int]
+    action: str
+    created_at: datetime
+    created_by: int
+    
+    class Config:
+        from_attributes = True
+

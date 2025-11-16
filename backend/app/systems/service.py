@@ -1,6 +1,7 @@
 """系统管理服务"""
-from sqlalchemy.orm import Session
-from typing import Optional, Dict
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from typing import Optional, Dict, List
 from datetime import datetime
 
 from app.models.system import System
@@ -13,10 +14,10 @@ from app.core.security import jwt_handler
 class SystemService:
     """系统管理服务"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
     
-    def create_system(
+    async def create_system(
         self,
         code: str,
         name: str,
@@ -52,31 +53,131 @@ class SystemService:
         )
         
         self.db.add(system)
-        self.db.commit()
-        self.db.refresh(system)
+        await self.db.commit()
+        await self.db.refresh(system)
         
         return system
     
-    def get_system_by_code(self, code: str) -> Optional[System]:
+    async def get_system_by_code(self, code: str) -> Optional[System]:
         """根据代码获取系统"""
-        return self.db.query(System).filter(System.code == code).first()
+        result = await self.db.execute(select(System).filter(System.code == code))
+        return result.scalar_one_or_none()
     
-    def get_system_by_id(self, system_id: int) -> Optional[System]:
+    async def get_system_by_id(self, system_id: int) -> Optional[System]:
         """根据ID获取系统"""
-        return self.db.query(System).get(system_id)
+        result = await self.db.execute(select(System).filter(System.id == system_id))
+        return result.scalar_one_or_none()
     
-    def list_systems(self) -> list:
+    async def list_systems(self) -> List[System]:
         """获取所有系统列表"""
-        return self.db.query(System).all()
+        result = await self.db.execute(select(System).order_by(System.created_at.desc()))
+        return list(result.scalars().all())
+    
+    async def update_system(
+        self,
+        system_id: int,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        api_endpoint: Optional[str] = None
+    ) -> Optional[System]:
+        """
+        更新系统信息
+        
+        Args:
+            system_id: 系统ID
+            name: 系统名称
+            description: 系统描述
+            api_endpoint: API地址
+            
+        Returns:
+            更新后的System对象
+        """
+        result = await self.db.execute(select(System).filter(System.id == system_id))
+        system = result.scalar_one_or_none()
+        
+        if system:
+            if name is not None:
+                system.name = name
+            if description is not None:
+                system.description = description
+            if api_endpoint is not None:
+                system.api_endpoint = api_endpoint
+            
+            await self.db.commit()
+            await self.db.refresh(system)
+        
+        return system
+    
+    async def update_system_status(self, system_id: int, status: str) -> Optional[System]:
+        """
+        更新系统状态
+        
+        Args:
+            system_id: 系统ID
+            status: 状态 (active/inactive)
+            
+        Returns:
+            更新后的System对象
+        """
+        result = await self.db.execute(select(System).filter(System.id == system_id))
+        system = result.scalar_one_or_none()
+        
+        if system:
+            system.status = status
+            await self.db.commit()
+            await self.db.refresh(system)
+        
+        return system
+    
+    async def regenerate_system_token(self, system_id: int) -> Optional[System]:
+        """
+        重新生成系统Token
+        
+        Args:
+            system_id: 系统ID
+            
+        Returns:
+            更新后的System对象
+        """
+        result = await self.db.execute(select(System).filter(System.id == system_id))
+        system = result.scalar_one_or_none()
+        
+        if system:
+            # 生成新的系统Token
+            system_token = jwt_handler.generate_system_token(
+                system_id=system.code,
+                system_name=system.name,
+                expires_days=365
+            )
+            system.system_token = system_token
+            
+            await self.db.commit()
+            await self.db.refresh(system)
+        
+        return system
+    
+    async def get_system_roles(self, system_id: int) -> List[Role]:
+        """获取系统的角色列表"""
+        result = await self.db.execute(
+            select(Role).filter(Role.system_id == system_id).order_by(Role.created_at.desc())
+        )
+        return list(result.scalars().all())
+    
+    async def get_system_permissions(self, system_id: int) -> List[Permission]:
+        """获取系统的权限列表"""
+        result = await self.db.execute(
+            select(Permission).filter(Permission.system_id == system_id).order_by(Permission.created_at.desc())
+        )
+        return list(result.scalars().all())
 
 
 class ConfigSyncService:
     """配置同步服务"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
     
-    def get_system_config(self, system: System) -> Dict:
+    async def get_system_config(self, system: System) -> Dict:
         """
         获取系统的完整权限配置
         
@@ -89,19 +190,22 @@ class ConfigSyncService:
         namespace = system.code
         
         # 查询系统的角色
-        roles = self.db.query(Role).filter(
-            Role.namespace == namespace
-        ).all()
+        roles_result = await self.db.execute(
+            select(Role).filter(Role.namespace == namespace)
+        )
+        roles = list(roles_result.scalars().all())
         
         # 查询系统的权限
-        permissions = self.db.query(Permission).filter(
-            Permission.namespace == namespace
-        ).all()
+        permissions_result = await self.db.execute(
+            select(Permission).filter(Permission.namespace == namespace)
+        )
+        permissions = list(permissions_result.scalars().all())
         
         # 查询系统的路由规则
-        route_patterns = self.db.query(RoutePattern).filter(
-            RoutePattern.system_id == system.id
-        ).all()
+        route_patterns_result = await self.db.execute(
+            select(RoutePattern).filter(RoutePattern.system_id == system.id)
+        )
+        route_patterns = list(route_patterns_result.scalars().all())
         
         # 构建配置
         config = {

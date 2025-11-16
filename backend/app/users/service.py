@@ -1,10 +1,12 @@
 """用户服务"""
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import Dict, Optional
+from sqlalchemy import select, func, or_
+from sqlalchemy.orm import selectinload
+from typing import Dict, Optional, Tuple, List
 from datetime import datetime
 
 from app.models.user import User
+from app.models.user_role import UserRole
 
 
 class UserService:
@@ -93,4 +95,101 @@ class UserService:
             select(User).filter(User.feishu_user_id == feishu_user_id)
         )
         return result.scalar_one_or_none()
+    
+    async def list_users(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        search: Optional[str] = None,
+        dept_id: Optional[str] = None,
+        status: Optional[str] = None
+    ) -> Tuple[List[User], int]:
+        """
+        获取用户列表
+        
+        Args:
+            skip: 跳过数量
+            limit: 限制数量
+            search: 搜索关键词（用户名或邮箱）
+            dept_id: 部门ID筛选
+            status: 状态筛选
+            
+        Returns:
+            (用户列表, 总数)
+        """
+        # 构建查询
+        stmt = select(User)
+        count_stmt = select(func.count(User.id))
+        
+        # 搜索条件
+        if search:
+            search_filter = or_(
+                User.username.ilike(f"%{search}%"),
+                User.email.ilike(f"%{search}%")
+            )
+            stmt = stmt.where(search_filter)
+            count_stmt = count_stmt.where(search_filter)
+        
+        # 部门筛选
+        if dept_id:
+            # dept_ids 是 JSON 数组，需要检查是否包含该ID
+            stmt = stmt.where(User.dept_ids.contains([dept_id]))
+            count_stmt = count_stmt.where(User.dept_ids.contains([dept_id]))
+        
+        # 状态筛选
+        if status:
+            stmt = stmt.where(User.status == status)
+            count_stmt = count_stmt.where(User.status == status)
+        
+        # 获取总数
+        total_result = await self.db.execute(count_stmt)
+        total = total_result.scalar() or 0
+        
+        # 分页
+        stmt = stmt.offset(skip).limit(limit).order_by(User.created_at.desc())
+        
+        # 执行查询
+        result = await self.db.execute(stmt)
+        users = result.scalars().all()
+        
+        return list(users), total
+    
+    async def update_user_status(self, user_id: int, status: str) -> Optional[User]:
+        """
+        更新用户状态
+        
+        Args:
+            user_id: 用户ID
+            status: 状态 (active/inactive)
+            
+        Returns:
+            更新后的用户对象
+        """
+        result = await self.db.execute(select(User).filter(User.id == user_id))
+        user = result.scalar_one_or_none()
+        
+        if user:
+            user.status = status
+            await self.db.commit()
+            await self.db.refresh(user)
+        
+        return user
+    
+    async def get_user_roles(self, user_id: int) -> List[UserRole]:
+        """
+        获取用户的角色列表
+        
+        Args:
+            user_id: 用户ID
+            
+        Returns:
+            用户角色列表
+        """
+        result = await self.db.execute(
+            select(UserRole)
+            .options(selectinload(UserRole.role))
+            .filter(UserRole.user_id == user_id)
+            .order_by(UserRole.created_at.desc())
+        )
+        return list(result.scalars().all())
 
