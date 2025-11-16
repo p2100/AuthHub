@@ -75,3 +75,10 @@ class UpdateRolePermissions(BaseModel):
     """更新角色权限"""
     permission_ids: List[int]
 
+
+class StatsResponse(BaseModel):
+    """统计数据响应"""
+    system_count: int = Field(..., description="系统总数")
+    user_count: int = Field(..., description="用户总数")
+    role_count: int = Field(..., description="角色总数")
+

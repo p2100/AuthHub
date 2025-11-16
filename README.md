@@ -87,7 +87,7 @@ cd backend
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 安装依赖
-uv pip install -e .
+uv sync
 
 # 配置环境变量
 cp .env.example .env
@@ -97,7 +97,7 @@ cp .env.example .env
 python scripts/generate_keys.py
 
 # 初始化数据库
-alembic upgrade head
+uv run alembic upgrade head
 
 # 启动服务
 uvicorn app.main:app --reload

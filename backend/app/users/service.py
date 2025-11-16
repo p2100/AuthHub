@@ -1,5 +1,6 @@
 """用户服务"""
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import Dict, Optional
 from datetime import datetime
 
@@ -9,10 +10,10 @@ from app.models.user import User
 class UserService:
     """用户服务"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
     
-    def sync_user_from_feishu(self, user_info: Dict) -> User:
+    async def sync_user_from_feishu(self, user_info: Dict) -> User:
         """
         从飞书同步用户信息
         
@@ -22,12 +23,14 @@ class UserService:
         Returns:
             User对象
         """
-        feishu_user_id = user_info.get("open_id")
+        # 优先使用user_id，如果没有则使用open_id
+        feishu_user_id = user_info.get("user_id") or user_info.get("open_id")
         
-        # 查找现有用户
-        user = self.db.query(User).filter(
-            User.feishu_user_id == feishu_user_id
-        ).first()
+        # 查找现有用户（使用异步查询）
+        result = await self.db.execute(
+            select(User).filter(User.feishu_user_id == feishu_user_id)
+        )
+        user = result.scalar_one_or_none()
         
         # 用户信息
         username = user_info.get("name", "")
@@ -58,12 +61,12 @@ class UserService:
             )
             self.db.add(user)
         
-        self.db.commit()
-        self.db.refresh(user)
+        await self.db.commit()
+        await self.db.refresh(user)
         
         return user
     
-    def update_user_departments(self, user_id: int, dept_ids: list, dept_names: list):
+    async def update_user_departments(self, user_id: int, dept_ids: list, dept_names: list):
         """
         更新用户部门信息
         
@@ -72,19 +75,22 @@ class UserService:
             dept_ids: 部门ID列表
             dept_names: 部门名称列表
         """
-        user = self.db.query(User).get(user_id)
+        result = await self.db.execute(select(User).filter(User.id == user_id))
+        user = result.scalar_one_or_none()
         if user:
             user.dept_ids = dept_ids
             user.dept_names = dept_names
-            self.db.commit()
+            await self.db.commit()
     
-    def get_user_by_id(self, user_id: int) -> Optional[User]:
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
         """根据ID获取用户"""
-        return self.db.query(User).get(user_id)
+        result = await self.db.execute(select(User).filter(User.id == user_id))
+        return result.scalar_one_or_none()
     
-    def get_user_by_feishu_id(self, feishu_user_id: str) -> Optional[User]:
+    async def get_user_by_feishu_id(self, feishu_user_id: str) -> Optional[User]:
         """根据飞书ID获取用户"""
-        return self.db.query(User).filter(
-            User.feishu_user_id == feishu_user_id
-        ).first()
+        result = await self.db.execute(
+            select(User).filter(User.feishu_user_id == feishu_user_id)
+        )
+        return result.scalar_one_or_none()
 

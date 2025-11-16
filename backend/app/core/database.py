@@ -13,7 +13,7 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
-    echo=settings.DEBUG,
+    echo=False,  # 关闭SQL日志输出
 )
 
 # 创建异步会话工厂
