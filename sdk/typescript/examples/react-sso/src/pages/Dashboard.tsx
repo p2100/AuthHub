@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { BACKEND_URL } from '../config';
+import { AUTH_CONFIG } from '../config';
 
 function Dashboard() {
-  const { user, logout, isAuthenticated, loading } = useAuth({ backendUrl: BACKEND_URL });
+  const { user, logout, isAuthenticated, loading } = useAuth(AUTH_CONFIG);
   const navigate = useNavigate();
 
   useEffect(() => {

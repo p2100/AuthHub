@@ -212,143 +212,27 @@ if __name__ == "__main__":
 ### 1. 安装依赖
 
 ```bash
-npm install axios react-router-dom
+npm install @chenjing194/authhub-sdk react-router-dom
 # 或
-pnpm install axios react-router-dom
+pnpm install @chenjing194/authhub-sdk react-router-dom
 ```
 
-### 2. 创建认证客户端
+**注意**：SDK 已包含 `axios`，无需单独安装。
 
-创建 `src/lib/auth-client.ts`：
+### 2. 直接使用 SDK
+
+无需创建认证客户端，直接从 SDK 导入：
 
 ```typescript
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-
-export interface User {
-  sub: string;
-  username: string;
-  email?: string;
-  global_roles?: string[];
-  system_roles?: Record<string, string[]>;
-}
-
-export interface UseAuthOptions {
-  backendUrl: string;      // 后端地址
-  loginPath?: string;      // 登录路径，默认 /auth/login
-  logoutPath?: string;     // 登出路径，默认 /auth/logout
-  mePath?: string;         // 用户信息路径，默认 /api/me
-}
-
-export interface UseAuthResult {
-  user: User | null;
-  loading: boolean;
-  isAuthenticated: boolean;
-  login: (returnUrl?: string) => void;
-  logout: () => Promise<void>;
-  refresh: () => Promise<void>;
-}
-
-class AuthClient {
-  private config: Required<UseAuthOptions>;
-
-  constructor(config: UseAuthOptions) {
-    this.config = {
-      backendUrl: config.backendUrl.replace(/\/$/, ''),
-      loginPath: config.loginPath || '/auth/login',
-      logoutPath: config.logoutPath || '/auth/logout',
-      mePath: config.mePath || '/api/me',
-    };
-  }
-
-  login(returnUrl?: string): void {
-    const url = new URL(this.config.loginPath, this.config.backendUrl);
-    if (returnUrl) {
-      // 将相对路径转换为完整的前端 URL
-      const fullReturnUrl = returnUrl.startsWith('http')
-        ? returnUrl
-        : window.location.origin + returnUrl;
-      // ⚠️ 重要：参数名必须是 'redirect'
-      url.searchParams.set('redirect', fullReturnUrl);
-    }
-    window.location.href = url.toString();
-  }
-
-  async logout(): Promise<void> {
-    try {
-      await axios.post(
-        `${this.config.backendUrl}${this.config.logoutPath}`,
-        {},
-        { withCredentials: true }
-      );
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  }
-
-  async getCurrentUser(): Promise<User | null> {
-    try {
-      const response = await axios.get(
-        `${this.config.backendUrl}${this.config.mePath}`,
-        { withCredentials: true }  // ⚠️ 必须！携带 Cookie
-      );
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        return null;
-      }
-      console.error('Get current user failed:', error);
-      return null;
-    }
-  }
-}
-
-export function useAuth(options: UseAuthOptions): UseAuthResult {
-  const [client] = useState(() => new AuthClient(options));
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(async () => {
-    try {
-      const currentUser = await client.getCurrentUser();
-      setUser(currentUser);
-    } catch (error) {
-      console.error('Failed to refresh user:', error);
-      setUser(null);
-    }
-  }, [client]);
-
-  useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      await refresh();
-      setLoading(false);
-    };
-    init();
-  }, [refresh]);
-
-  const login = useCallback(
-    (returnUrl?: string) => {
-      client.login(returnUrl || window.location.pathname);
-    },
-    [client]
-  );
-
-  const logout = useCallback(async () => {
-    await client.logout();
-    setUser(null);
-  }, [client]);
-
-  return {
-    user,
-    loading,
-    isAuthenticated: user !== null,
-    login,
-    logout,
-    refresh,
-  };
-}
+import { useAuth } from '@chenjing194/authhub-sdk';
+import type { User, UseAuthResult } from '@chenjing194/authhub-sdk';
 ```
+
+SDK 提供的 `useAuth` Hook 已经包含了所有必要的功能：
+- ✅ 自动获取用户信息
+- ✅ 处理登录/登出
+- ✅ Token 刷新
+- ✅ 完整的 TypeScript 类型支持
 
 ### 3. 配置后端地址
 

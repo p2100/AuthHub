@@ -45,7 +45,12 @@ export class AuthClient {
   login(returnUrl?: string): void {
     const url = new URL(`${this.backendUrl}${this.loginPath}`);
     if (returnUrl) {
-      url.searchParams.set('return_url', returnUrl);
+      // 将相对路径转换为完整的前端 URL
+      const fullReturnUrl = returnUrl.startsWith('http')
+        ? returnUrl
+        : (typeof window !== 'undefined' ? window.location.origin + returnUrl : returnUrl);
+      // 注意：后端 FastAPI SSO 中间件使用的参数名是 'redirect'
+      url.searchParams.set('redirect', fullReturnUrl);
     }
     // 仅在浏览器环境下执行
     if (typeof window !== 'undefined') {

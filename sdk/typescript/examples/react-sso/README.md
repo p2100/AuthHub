@@ -1,12 +1,12 @@
 # AuthHub React SSO 示例 (轻量版)
 
-这是一个使用 AuthHub 轻量级 SDK 的 React SSO 示例应用。
+这是一个使用 **AuthHub TypeScript SDK** (`@chenjing194/authhub-sdk`) 的 React SSO 示例应用。
 
 ## 核心理念
 
 这个示例展示了**前后端分离架构**下的最佳实践：
 
-- **前端**：只使用一个简单的 `useAuth` Hook
+- **前端**：使用 AuthHub SDK 的 `useAuth` Hook（从 npm 包导入）
 - **后端**：使用完整的 Python SDK 处理所有 OAuth 逻辑
 - **Token**：存储在 HttpOnly Cookie 中，无法被 JavaScript 访问
 
@@ -32,9 +32,19 @@
 
 ```typescript
 export const BACKEND_URL = 'http://localhost:8001'; // 你的业务后端地址
+
+export const AUTH_CONFIG = {
+  backendUrl: BACKEND_URL,
+  loginPath: '/auth/login',    // 必须与后端 setup_sso 的 login_path 一致
+  logoutPath: '/auth/logout',  // 必须与后端 setup_sso 的 logout_path 一致
+  mePath: '/api/me',           // 后端提供的用户信息接口
+};
 ```
 
-**注意**：这里配置的是你的业务后端地址，而不是 AuthHub 地址。
+**重要提示**：
+- `backendUrl` 是你的业务后端地址，不是 AuthHub 地址
+- 路径配置必须与后端 `setup_sso()` 的配置保持一致
+- SDK 默认路径是 `/api/v1/auth/*`，但本示例使用 `/auth/*` 以简化配置
 
 ## 运行步骤
 
@@ -76,10 +86,8 @@ npm run dev
 
 ```
 src/
-├── lib/
-│   └── auth-client.ts  # 轻量级认证客户端（实际项目中从 @authhub/sdk 导入）
 ├── hooks/
-│   └── useAuth.ts      # 认证 Hook（重新导出 SDK）
+│   └── useAuth.ts      # 重新导出 SDK 的 useAuth
 ├── pages/
 │   ├── Login.tsx       # 登录页面（简单的按钮 + 跳转）
 │   ├── Callback.tsx    # 回调页面（后端已处理，直接重定向）
@@ -88,12 +96,14 @@ src/
 └── App.tsx            # 应用入口
 ```
 
+**注意**：本示例使用 `@chenjing194/authhub-sdk` npm 包，不再包含本地实现的 `auth-client.ts`。
+
 ## 核心代码
 
 ### 前端（超简单）
 
 ```tsx
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from '@chenjing194/authhub-sdk';
 import { BACKEND_URL } from './config';
 
 function App() {
@@ -115,6 +125,8 @@ function App() {
   );
 }
 ```
+
+**注意**：直接从 `@chenjing194/authhub-sdk` 导入 `useAuth`，无需本地实现。
 
 ### 后端（一行集成）
 

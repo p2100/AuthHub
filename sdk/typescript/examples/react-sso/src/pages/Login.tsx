@@ -1,9 +1,9 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { BACKEND_URL } from '../config';
+import { AUTH_CONFIG } from '../config';
 
 function Login() {
-  const { login, loading } = useAuth({ backendUrl: BACKEND_URL });
+  const { login, loading } = useAuth(AUTH_CONFIG);
 
   const handleLogin = () => {
     login('/dashboard');
