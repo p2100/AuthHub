@@ -35,10 +35,93 @@ export function setToken(token: string): void {
 }
 
 /**
+ * 获取refresh token
+ */
+export function getRefreshToken(): string | null {
+  return localStorage.getItem('refresh_token')
+}
+
+/**
+ * 设置refresh token
+ */
+export function setRefreshToken(token: string): void {
+  localStorage.setItem('refresh_token', token)
+}
+
+/**
  * 清除token
  */
 export function clearToken(): void {
   localStorage.removeItem('auth_token')
+  localStorage.removeItem('refresh_token')
+}
+
+// Refresh token 状态管理（防止并发刷新）
+let isRefreshing = false
+let refreshSubscribers: Array<(token: string) => void> = []
+
+/**
+ * 通知等待的订阅者
+ */
+function onRefreshed(token: string) {
+  refreshSubscribers.forEach(callback => callback(token))
+  refreshSubscribers = []
+}
+
+/**
+ * 添加刷新订阅者
+ */
+function addRefreshSubscriber(callback: (token: string) => void) {
+  refreshSubscribers.push(callback)
+}
+
+/**
+ * 刷新 access token
+ */
+async function refreshAccessToken(): Promise<boolean> {
+  // 如果正在刷新，等待刷新完成
+  if (isRefreshing) {
+    return new Promise((resolve) => {
+      addRefreshSubscriber((token: string) => {
+        resolve(!!token)
+      })
+    })
+  }
+
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) {
+    return false
+  }
+
+  isRefreshing = true
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      setToken(data.access_token)
+      setRefreshToken(data.refresh_token)
+
+      // 通知等待的请求
+      onRefreshed(data.access_token)
+      isRefreshing = false
+      return true
+    } else {
+      isRefreshing = false
+      return false
+    }
+  } catch (error) {
+    console.error('Token刷新失败:', error)
+    isRefreshing = false
+    return false
+  }
 }
 
 /**
@@ -49,7 +132,7 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = getToken()
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -68,8 +151,16 @@ async function request<T>(
       headers,
     })
 
-    // 处理401未授权 - 跳转到登录页
+    // 处理401未授权 - 尝试刷新token
     if (response.status === 401) {
+      // 尝试刷新token
+      const refreshed = await refreshAccessToken()
+      if (refreshed) {
+        // 刷新成功，重试原请求
+        return request<T>(endpoint, options)
+      }
+
+      // 刷新失败，清除token并跳转登录页
       clearToken()
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'

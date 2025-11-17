@@ -1,8 +1,9 @@
 """认证API路由"""
 
 import secrets
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.feishu import feishu_client
@@ -14,6 +15,7 @@ from app.core.logger import logger
 from app.core.security import jwt_handler
 from app.schemas.auth import (
     PublicKeyResponse,
+    RefreshTokenRequest,
     SSOExchangeTokenRequest,
     SSOLoginUrlRequest,
     SSOLoginUrlResponse,
@@ -124,8 +126,19 @@ async def feishu_callback(
         )
         logger.info(f"[登录回调] 步骤5完成 - token: {token[:50]}***")
 
+        # 6. 生成 Refresh Token
+        logger.info("[登录回调] 步骤6: 生成 Refresh Token")
+        refresh_token = jwt_handler.create_refresh_token(user.id)
+        logger.info(f"[登录回调] 步骤6完成 - refresh_token: {refresh_token[:30]}***")
+
         logger.info(f"[登录回调] ✅ 登录成功 - 用户: {user.username} (ID: {user.id})")
-        return TokenResponse(access_token=token, token_type="bearer", expires_in=3600)
+        return TokenResponse(
+            access_token=token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=3600,
+            refresh_expires_in=604800,
+        )
 
     except Exception as e:
         logger.error(f"[登录回调] ❌ 登录失败: {str(e)}", exc_info=True)
@@ -133,20 +146,30 @@ async def feishu_callback(
 
 
 @router.post("/logout")
-async def logout(current_user: dict = Depends(get_current_user)):
+async def logout(
+    current_user: dict = Depends(get_current_user),
+    refresh_token: Optional[str] = Body(None, embed=True),
+):
     """
-    登出 - 将Token加入黑名单
+    登出 - 将Token加入黑名单并撤销 refresh token
 
     Args:
         current_user: 当前用户信息
+        refresh_token: 可选的 refresh token（用于撤销，从请求body中获取）
 
     Returns:
         成功消息
     """
+    # 撤销 access token（加入黑名单）
     jti = current_user.get("jti", "")
     if jti:
-        # 将Token加入黑名单
         jwt_handler.add_to_blacklist(jti, expire_seconds=3600)
+        logger.info(f"[登出] Access token 已加入黑名单 - jti: {jti}")
+
+    # 撤销 refresh token
+    if refresh_token:
+        jwt_handler.revoke_refresh_token(refresh_token)
+        logger.info(f"[登出] Refresh token 已撤销 - token: {refresh_token[:30]}***")
 
     return {"message": "登出成功"}
 
@@ -180,6 +203,79 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         用户信息
     """
     return current_user
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_access_token(request: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
+    """
+    刷新访问令牌
+
+    使用 refresh token 获取新的 access token 和 refresh token (rotation)
+
+    Args:
+        request: 包含 refresh_token
+        db: 数据库会话
+
+    Returns:
+        新的 access token 和 refresh token
+    """
+    logger.info(f"[Token刷新] 开始刷新 - refresh_token: {request.refresh_token[:30]}***")
+
+    # 1. 验证 refresh token
+    user_id = jwt_handler.verify_refresh_token(request.refresh_token)
+    if not user_id:
+        logger.error("[Token刷新] ❌ Refresh token 无效或已过期")
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+    logger.info(f"[Token刷新] Refresh token 验证通过 - user_id: {user_id}")
+
+    # 2. 获取用户信息
+    from sqlalchemy import select
+
+    from app.models.user import User
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        logger.error(f"[Token刷新] ❌ 用户不存在 - user_id: {user_id}")
+        raise HTTPException(status_code=404, detail="User not found")
+
+    logger.info(f"[Token刷新] 用户信息获取成功 - username: {user.username}")
+
+    # 3. 收集权限
+    permission_collector = PermissionCollector(db)
+    user_permissions = await permission_collector.collect(user.id)
+    logger.info(f"[Token刷新] 权限收集完成")
+
+    # 4. 撤销旧的 refresh token (rotation)
+    jwt_handler.revoke_refresh_token(request.refresh_token)
+    logger.info("[Token刷新] 旧 refresh token 已撤销")
+
+    # 5. 生成新的 tokens
+    access_token = jwt_handler.create_access_token(
+        user_id=user.id,
+        username=user.username,
+        email=user.email or "",
+        global_roles=user_permissions.get("global_roles", []),
+        system_roles=user_permissions.get("system_roles", {}),
+        global_resources=user_permissions.get("global_resources", {}),
+        system_resources=user_permissions.get("system_resources", {}),
+        dept_ids=user.dept_ids or [],
+        dept_names=user.dept_names or [],
+    )
+
+    new_refresh_token = jwt_handler.create_refresh_token(user.id)
+
+    logger.info(f"[Token刷新] ✅ Token 刷新成功 - 用户: {user.username} (ID: {user.id})")
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+        expires_in=3600,
+        refresh_expires_in=604800,
+    )
 
 
 # ========== SSO 代理端点 ==========
@@ -284,8 +380,19 @@ async def exchange_sso_token(request: SSOExchangeTokenRequest, db: AsyncSession 
             dept_names=user.dept_names or [],
         )
 
+        # 6. 生成 Refresh Token
+        logger.info("[SSO] 步骤6: 生成 Refresh Token")
+        refresh_token = jwt_handler.create_refresh_token(user.id)
+        logger.info(f"[SSO] 步骤6完成 - refresh_token: {refresh_token[:30]}***")
+
         logger.info(f"[SSO] ✅ Token 交换成功 - 用户: {user.username} (ID: {user.id})")
-        return TokenResponse(access_token=token, token_type="bearer", expires_in=3600)
+        return TokenResponse(
+            access_token=token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=3600,
+            refresh_expires_in=604800,
+        )
 
     except Exception as e:
         logger.error(f"[SSO] ❌ Token 交换失败: {str(e)}", exc_info=True)

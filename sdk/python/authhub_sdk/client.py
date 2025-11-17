@@ -130,6 +130,30 @@ class AuthHubClient:
         """检查资源访问权限"""
         return self.checker.check_resource_access(token_payload, resource_type, resource_id)
 
+    def refresh_token(self, refresh_token: str) -> Dict[str, str]:
+        """
+        刷新访问令牌
+        
+        Args:
+            refresh_token: Refresh Token
+            
+        Returns:
+            新的token数据（包含access_token和refresh_token）
+            
+        Raises:
+            Exception: 刷新失败时抛出异常
+        """
+        try:
+            response = requests.post(
+                f"{self.authhub_url}/api/v1/auth/refresh",
+                json={"refresh_token": refresh_token},
+                timeout=10
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            raise Exception(f"Token刷新失败: {str(e)}")
+
     # ========== 内部方法 ==========
 
     def _sync_public_key(self):

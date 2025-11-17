@@ -40,8 +40,8 @@ export default function LoginCallback() {
         // 调用后端回调接口换取token
         const tokenData = await apiGet<TokenResponse>(`/auth/feishu/callback?code=${code}`)
         
-        // 保存token并获取用户信息
-        await login(tokenData.access_token)
+        // 保存access token和refresh token并获取用户信息
+        await login(tokenData.access_token, tokenData.refresh_token)
         
         // 登录成功，跳转到仪表盘
         navigate('/dashboard', { replace: true })

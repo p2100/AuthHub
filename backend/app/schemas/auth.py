@@ -6,8 +6,10 @@ from typing import Optional, Dict
 class TokenResponse(BaseModel):
     """Token响应"""
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int = 3600
+    refresh_expires_in: int = 604800  # 7天
 
 
 class UserInfo(BaseModel):
@@ -50,4 +52,9 @@ class SSOExchangeTokenRequest(BaseModel):
     """SSO Token交换请求"""
     code: str = Field(..., description="授权码")
     state: Optional[str] = Field(None, description="状态参数")
+
+
+class RefreshTokenRequest(BaseModel):
+    """刷新Token请求"""
+    refresh_token: str = Field(..., description="Refresh Token")
 

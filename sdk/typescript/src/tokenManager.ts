@@ -8,6 +8,7 @@ import type { TokenPayload } from './types';
 
 const TOKEN_KEY = 'authhub_token';
 const TOKEN_PAYLOAD_KEY = 'authhub_token_payload';
+const REFRESH_TOKEN_KEY = 'authhub_refresh_token';
 
 export class TokenManager {
   /**
@@ -33,6 +34,22 @@ export class TokenManager {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_PAYLOAD_KEY);
+  }
+
+  /**
+   * 保存Refresh Token
+   */
+  static setRefreshToken(token: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(REFRESH_TOKEN_KEY, token);
+  }
+
+  /**
+   * 获取Refresh Token
+   */
+  static getRefreshToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
   }
 
   /**
@@ -82,6 +99,8 @@ export class TokenManager {
    */
   static clear(): void {
     this.removeToken();
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
   }
 }
 

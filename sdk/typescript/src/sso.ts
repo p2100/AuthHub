@@ -13,8 +13,10 @@ export interface SSOLoginUrlResponse {
 
 export interface SSOTokenResponse {
   access_token: string;
+  refresh_token: string;
   token_type: string;
   expires_in: number;
+  refresh_expires_in: number;
 }
 
 export class SSOClient {
@@ -63,22 +65,22 @@ export class SSOClient {
    * 
    * 自动交换Token并存储到localStorage
    */
-  async handleCallback(code: string, state?: string): Promise<string> {
+  async handleCallback(code: string, state?: string): Promise<SSOTokenResponse> {
     const tokenData = await this.exchangeToken(code, state);
-    const token = tokenData.access_token;
 
-    // 存储Token
-    TokenManager.setToken(token);
+    // 存储Access Token和Refresh Token
+    TokenManager.setToken(tokenData.access_token);
+    TokenManager.setRefreshToken(tokenData.refresh_token);
 
     // 解析并存储Token Payload
     try {
-      const payload = await this.verifier.verify(token);
+      const payload = await this.verifier.verify(tokenData.access_token);
       TokenManager.setTokenPayload(payload);
     } catch (error) {
       console.warn('Token验证失败，但仍然存储:', error);
     }
 
-    return token;
+    return tokenData;
   }
 
   /**

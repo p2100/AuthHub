@@ -1,94 +1,34 @@
 /**
- * 轻量级认证客户端
- * 所有 OAuth 逻辑由后端处理
+ * AuthHub 认证客户端
+ * 
+ * 提供token刷新等认证相关功能
  */
 
-export interface AuthConfig {
-  backendUrl: string; // 业务后端地址
-  loginPath?: string;
-  logoutPath?: string;
-  mePath?: string;
-}
-
-export interface User {
-  sub: string;
-  username: string;
-  email?: string;
-  global_roles?: string[];
-  system_roles?: Record<string, string[]>;
-  dept_ids?: number[];
-  dept_names?: string[];
-}
+import axios from 'axios';
+import type { SSOTokenResponse } from './sso';
 
 export class AuthClient {
-  private config: Required<AuthConfig>;
+  private authhubUrl: string;
 
-  constructor(config: AuthConfig) {
-    this.config = {
-      backendUrl: config.backendUrl.replace(/\/$/, ''),
-      loginPath: config.loginPath || '/auth/login',
-      logoutPath: config.logoutPath || '/auth/logout',
-      mePath: config.mePath || '/api/me',
-    };
+  constructor(authhubUrl: string) {
+    this.authhubUrl = authhubUrl.replace(/\/$/, '');
   }
 
   /**
-   * 触发登录（跳转到后端登录路由）
+   * 刷新访问令牌
+   * 
+   * @param refreshToken Refresh Token
+   * @returns 新的token数据（包含access_token和refresh_token）
    */
-  login(returnUrl?: string): void {
-    const url = new URL(this.config.loginPath, this.config.backendUrl);
-    if (returnUrl) {
-      url.searchParams.set('return_url', returnUrl);
-    }
-    window.location.href = url.toString();
-  }
-
-  /**
-   * 登出
-   */
-  async logout(): Promise<void> {
+  async refreshToken(refreshToken: string): Promise<SSOTokenResponse> {
     try {
-      await fetch(`${this.config.backendUrl}${this.config.logoutPath}`, {
-        method: 'POST',
-        credentials: 'include', // 重要：带上 Cookie
-      });
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  }
-
-  /**
-   * 获取当前用户信息
-   */
-  async getCurrentUser(): Promise<User | null> {
-    try {
-      const response = await fetch(
-        `${this.config.backendUrl}${this.config.mePath}`,
-        {
-          credentials: 'include', // 重要：带上 Cookie
-        }
+      const response = await axios.post<SSOTokenResponse>(
+        `${this.authhubUrl}/api/v1/auth/refresh`,
+        { refresh_token: refreshToken }
       );
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          return null; // 未登录
-        }
-        throw new Error(`Failed to fetch user: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
-      console.error('Get current user failed:', error);
-      return null;
+      throw new Error(`Token刷新失败: ${error}`);
     }
-  }
-
-  /**
-   * 检查是否已登录
-   */
-  async isAuthenticated(): Promise<boolean> {
-    const user = await this.getCurrentUser();
-    return user !== null;
   }
 }
-

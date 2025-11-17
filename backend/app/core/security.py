@@ -1,5 +1,6 @@
 """安全相关工具"""
 
+import secrets
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple
 
@@ -148,6 +149,47 @@ class JWTHandler:
             是否在黑名单
         """
         return redis_client.exists(f"blacklist:{jti}") > 0
+
+    def create_refresh_token(self, user_id: int) -> str:
+        """
+        生成 refresh token 并存储到 Redis
+
+        Args:
+            user_id: 用户ID
+
+        Returns:
+            Refresh Token (随机字符串)
+        """
+        token = secrets.token_urlsafe(64)
+        # 存储到 Redis，7天过期
+        redis_client.setex(
+            f"refresh_token:{token}",
+            7 * 24 * 3600,  # 7天
+            str(user_id)
+        )
+        return token
+
+    def verify_refresh_token(self, token: str) -> Optional[int]:
+        """
+        验证 refresh token
+
+        Args:
+            token: Refresh Token
+
+        Returns:
+            用户ID，如果无效则返回 None
+        """
+        user_id = redis_client.get(f"refresh_token:{token}")
+        return int(user_id) if user_id else None
+
+    def revoke_refresh_token(self, token: str):
+        """
+        撤销 refresh token
+
+        Args:
+            token: Refresh Token
+        """
+        redis_client.delete(f"refresh_token:{token}")
 
 
 def generate_rsa_keys(key_size: int = 2048) -> Tuple[str, str]:

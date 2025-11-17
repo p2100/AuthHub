@@ -66,19 +66,33 @@ def register_sso_routes(
             redirect: 登录成功后的重定向地址
         """
         try:
-            # 交换Token
-            token = sso_client.handle_callback(code, state)
+            # 交换Token（现在返回包含access_token和refresh_token的字典）
+            token_data = sso_client.handle_callback(code, state)
+            access_token = token_data["access_token"]
+            refresh_token = token_data["refresh_token"]
 
             # 确定重定向地址
             redirect_url = redirect or after_login_redirect
 
             # 创建响应并设置Cookie
             response = RedirectResponse(url=redirect_url)
+
+            # 设置 access token cookie
             response.set_cookie(
                 key=cookie_name,
-                value=token,
+                value=access_token,
                 max_age=cookie_max_age,
                 httponly=cookie_httponly,
+                secure=cookie_secure,
+                samesite=cookie_samesite,
+            )
+
+            # 设置 refresh token cookie（7天过期）
+            response.set_cookie(
+                key=f"{cookie_name}_refresh",
+                value=refresh_token,
+                max_age=7 * 24 * 3600,  # 7天
+                httponly=True,  # 强制 httponly
                 secure=cookie_secure,
                 samesite=cookie_samesite,
             )
@@ -113,6 +127,8 @@ class AuthHubSSOMiddleware(BaseHTTPMiddleware):
         login_path: str = "/auth/login",
         logout_path: str = "/auth/logout",
         cookie_name: str = "authhub_token",
+        cookie_secure: bool = True,
+        cookie_samesite: str = "lax",
         public_routes: Optional[List[str]] = None,
         login_required: bool = True,
         redirect_to_login: bool = True,
@@ -127,6 +143,8 @@ class AuthHubSSOMiddleware(BaseHTTPMiddleware):
             login_path: 登录路径
             logout_path: 登出路径
             cookie_name: Cookie名称
+            cookie_secure: Cookie secure标志
+            cookie_samesite: Cookie SameSite策略
             public_routes: 公开路由列表(不需要登录)
             login_required: 是否要求登录
             redirect_to_login: 未登录时是否重定向到登录页
@@ -141,6 +159,8 @@ class AuthHubSSOMiddleware(BaseHTTPMiddleware):
 
         # Cookie配置
         self.cookie_name = cookie_name
+        self.cookie_secure = cookie_secure
+        self.cookie_samesite = cookie_samesite
 
         # 认证配置
         self.public_routes = public_routes or []
@@ -185,11 +205,50 @@ class AuthHubSSOMiddleware(BaseHTTPMiddleware):
             user_info = self.client.verify_token(token)
             request.state.user = user_info
         except Exception as e:
-            # Token无效
+            # Token无效，尝试使用 refresh token 刷新
+            refresh_token = request.cookies.get(f"{self.cookie_name}_refresh")
+            if refresh_token:
+                try:
+                    # 尝试刷新token
+                    new_tokens = self.client.refresh_token(refresh_token)
+                    new_access_token = new_tokens["access_token"]
+                    new_refresh_token = new_tokens["refresh_token"]
+
+                    # 验证新token并注入用户信息
+                    user_info = self.client.verify_token(new_access_token)
+                    request.state.user = user_info
+
+                    # 继续处理请求
+                    response = await call_next(request)
+
+                    # 在响应中更新cookies
+                    response.set_cookie(
+                        key=self.cookie_name,
+                        value=new_access_token,
+                        max_age=3600,
+                        httponly=True,
+                        secure=self.cookie_secure,
+                        samesite=self.cookie_samesite,
+                    )
+                    response.set_cookie(
+                        key=f"{self.cookie_name}_refresh",
+                        value=new_refresh_token,
+                        max_age=7 * 24 * 3600,
+                        httponly=True,
+                        secure=self.cookie_secure,
+                        samesite=self.cookie_samesite,
+                    )
+                    return response
+                except Exception as refresh_error:
+                    # 刷新失败，继续原有的错误处理逻辑
+                    pass
+
+            # Token无效且刷新失败
             if self.login_required:
                 # 删除无效Cookie并重定向到登录页
                 response = RedirectResponse(url=f"{self.login_path}?redirect={path}")
                 response.delete_cookie(key=self.cookie_name)
+                response.delete_cookie(key=f"{self.cookie_name}_refresh")
                 return response
             else:
                 request.state.user = None
@@ -255,6 +314,8 @@ def setup_sso(
         login_path=login_path,
         logout_path=logout_path,
         cookie_name=cookie_name,
+        cookie_secure=cookie_secure,
+        cookie_samesite=cookie_samesite,
         public_routes=public_routes,
         login_required=login_required,
         redirect_to_login=redirect_to_login,

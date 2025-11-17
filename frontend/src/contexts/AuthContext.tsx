@@ -3,7 +3,7 @@
  */
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { apiGet, apiPost, getToken, setToken, clearToken } from '@/utils/api'
+import { apiGet, apiPost, getToken, setToken, setRefreshToken, getRefreshToken, clearToken } from '@/utils/api'
 import type { UserInfo, TokenResponse } from '@/types/api'
 
 interface AuthContextType {
@@ -11,7 +11,7 @@ interface AuthContextType {
   loading: boolean
   isAuthenticated: boolean
   isAdmin: boolean
-  login: (token: string) => Promise<void>
+  login: (accessToken: string, refreshToken: string) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -53,17 +53,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  // 登录（保存token并获取用户信息）
-  const login = async (token: string) => {
-    setToken(token)
+  // 登录（保存access token和refresh token并获取用户信息）
+  const login = async (accessToken: string, refreshToken: string) => {
+    setToken(accessToken)
+    setRefreshToken(refreshToken)
     await fetchUser()
   }
 
   // 登出
   const logout = async () => {
+    const refreshToken = getRefreshToken()
     try {
-      // 调用后端登出API（将token加入黑名单）
-      await apiPost('/auth/logout')
+      // 调用后端登出API（将token加入黑名单并撤销refresh token）
+      await apiPost('/auth/logout', { refresh_token: refreshToken })
     } catch (error) {
       console.error('登出API调用失败:', error)
     } finally {

@@ -33,95 +33,95 @@
 
 1. **完整的飞书SSO集成**
 
-      - 飞书OAuth2.0登录流程完整实现
-      - 用户信息自动同步到数据库
-      - 支持飞书组织架构(部门信息)
-      - SSO代理端点(供SDK使用，简化业务系统集成)
+                        - 飞书OAuth2.0登录流程完整实现
+                        - 用户信息自动同步到数据库
+                        - 支持飞书组织架构(部门信息)
+                        - SSO代理端点(供SDK使用，简化业务系统集成)
 
 2. **富JWT Token设计**
 
-      - RS256非对称加密签名
-      - Token包含完整权限信息(全局角色、系统角色、资源绑定)
-      - 支持黑名单机制(立即撤销Token)
-      - 双Token系统(用户Token + 系统Token)
+                        - RS256非对称加密签名
+                        - Token包含完整权限信息(全局角色、系统角色、资源绑定)
+                        - 支持黑名单机制(立即撤销Token)
+                        - 双Token系统(用户Token + 系统Token)
 
 3. **多命名空间权限模型**
 
-      - 全局命名空间(global)用于跨系统权限
-      - 系统命名空间(system_a, system_b...)隔离各系统权限
-      - 支持命名空间级别的角色和权限管理
-      - 完整的RBAC实现(Role-Based Access Control)
+                        - 全局命名空间(global)用于跨系统权限
+                        - 系统命名空间(system_a, system_b...)隔离各系统权限
+                        - 支持命名空间级别的角色和权限管理
+                        - 完整的RBAC实现(Role-Based Access Control)
 
 4. **去中心化权限校验**
 
-      - SDK在业务系统本地验证JWT Token
-      - SDK在业务系统本地校验权限(零网络开销)
-      - 启动时同步权限配置到本地
-      - Redis Pub/Sub实时通知权限变更(已实现订阅，待实现发布)
+                        - SDK在业务系统本地验证JWT Token
+                        - SDK在业务系统本地校验权限(零网络开销)
+                        - 启动时同步权限配置到本地
+                        - Redis Pub/Sub实时通知权限变更(已实现订阅，待实现发布)
 
 5. **完整的Python SDK**
 
-      - 支持FastAPI、Flask、Django框架
-      - 一行代码完成SSO集成(`setup_sso()`)
-      - 装饰器支持(`@require_auth`, `@require_role`, `@require_permission`)
-      - 自动Token验证和权限校验
-      - 配置热更新(Redis Pub/Sub + 定期同步)
+                        - 支持FastAPI、Flask、Django框架
+                        - 一行代码完成SSO集成(`setup_sso()`)
+                        - 装饰器支持(`@require_auth`, `@require_role`, `@require_permission`)
+                        - 自动Token验证和权限校验
+                        - 配置热更新(Redis Pub/Sub + 定期同步)
 
 6. **完整的TypeScript SDK**
 
-      - 支持React和Vue框架
-      - React Hooks(`useAuth`, `useSSO`, `usePermission`)
-      - Vue Composables(`useAuth`, `useSSO`)
-      - 开箱即用的组件(LoginButton, LoginPage, ProtectedRoute)
-      - 轻量级设计(安全逻辑在后端，前端只做UI)
+                        - 支持React和Vue框架
+                        - React Hooks(`useAuth`, `useSSO`, `usePermission`)
+                        - Vue Composables(`useAuth`, `useSSO`)
+                        - 开箱即用的组件(LoginButton, LoginPage, ProtectedRoute)
+                        - 轻量级设计(安全逻辑在后端，前端只做UI)
 
 7. **功能完善的管理后台**
 
-      - 飞书扫码登录
-      - 系统管理(注册、Token管理、配置查看)
-      - 用户管理(列表、详情、角色分配)
-      - 角色管理(创建、编辑、权限配置)
-      - 权限管理(创建、编辑)
-      - 路由规则管理(正则匹配)
-      - 资源绑定管理
-      - 统计仪表盘
+                        - 飞书扫码登录
+                        - 系统管理(注册、Token管理、配置查看)
+                        - 用户管理(列表、详情、角色分配)
+                        - 角色管理(创建、编辑、权限配置)
+                        - 权限管理(创建、编辑)
+                        - 路由规则管理(正则匹配)
+                        - 资源绑定管理
+                        - 统计仪表盘
 
 ### 🏗️ 关键架构决策
 
 1. **为什么选择去中心化校验?**
 
-      - ✅ 高性能: 无中心化瓶颈，本地校验速度快
-      - ✅ 高可用: AuthHub故障不影响业务系统运行
-      - ✅ 低延迟: 零网络开销
-      - ⚠️ 权限变更有延迟: 通过Redis Pub/Sub和定期同步减少延迟(5分钟)
+                        - ✅ 高性能: 无中心化瓶颈，本地校验速度快
+                        - ✅ 高可用: AuthHub故障不影响业务系统运行
+                        - ✅ 低延迟: 零网络开销
+                        - ⚠️ 权限变更有延迟: 通过Redis Pub/Sub和定期同步减少延迟(5分钟)
 
 2. **为什么使用富JWT Token?**
 
-      - ✅ 包含完整权限信息，无需查询数据库
-      - ✅ 支持多系统权限(通过命名空间隔离)
-      - ✅ 支持资源级别的权限控制
-      - ⚠️ Token较大: 通过RS256压缩和合理的过期时间(1小时)缓解
+                        - ✅ 包含完整权限信息，无需查询数据库
+                        - ✅ 支持多系统权限(通过命名空间隔离)
+                        - ✅ 支持资源级别的权限控制
+                        - ⚠️ Token较大: 通过RS256压缩和合理的过期时间(1小时)缓解
 
 3. **为什么使用命名空间设计?**
 
-      - ✅ 统一管理: 一个后台管理所有系统权限
-      - ✅ 系统隔离: 各系统权限互不干扰
-      - ✅ 灵活扩展: 支持全局权限和系统专属权限
-      - ✅ 跨系统视图: 方便查看用户在所有系统的权限
+                        - ✅ 统一管理: 一个后台管理所有系统权限
+                        - ✅ 系统隔离: 各系统权限互不干扰
+                        - ✅ 灵活扩展: 支持全局权限和系统专属权限
+                        - ✅ 跨系统视图: 方便查看用户在所有系统的权限
 
 4. **为什么使用RS256而不是HS256?**
 
-      - ✅ 公钥可以公开分发给业务系统
-      - ✅ 业务系统只能验证Token，不能签发Token
-      - ✅ 安全性更高(私钥只在AuthHub保存)
+                        - ✅ 公钥可以公开分发给业务系统
+                        - ✅ 业务系统只能验证Token，不能签发Token
+                        - ✅ 安全性更高(私钥只在AuthHub保存)
 
 ### 🎨 实现亮点
 
 1. **SSO代理端点设计**
 
-      - 业务系统无需配置飞书AppID/Secret
-      - 业务系统通过AuthHub代理获取登录URL
-      - 简化业务系统集成(只需调用AuthHub的SSO接口)
+                        - 业务系统无需配置飞书AppID/Secret
+                        - 业务系统通过AuthHub代理获取登录URL
+                        - 简化业务系统集成(只需调用AuthHub的SSO接口)
 
 2. **一行代码完成SSO集成**
    ```python
@@ -129,28 +129,28 @@
    ```
 
 
-      - 自动添加认证中间件
-      - 自动添加SSO路由(/sso/login, /sso/callback, /sso/logout)
-      - 支持可配置的公开路由
-      - 支持未登录重定向
+                        - 自动添加认证中间件
+                        - 自动添加SSO路由(/sso/login, /sso/callback, /sso/logout)
+                        - 支持可配置的公开路由
+                        - 支持未登录重定向
 
 3. **权限收集器设计**
 
-      - 统一收集用户的全局角色、系统角色、全局资源、系统资源
-      - 按命名空间组织权限数据
-      - 去除命名空间前缀(简化Token)
+                        - 统一收集用户的全局角色、系统角色、全局资源、系统资源
+                        - 按命名空间组织权限数据
+                        - 去除命名空间前缀(简化Token)
 
 4. **配置同步优化**
 
-      - 启动时同步一次(快速启动)
-      - Redis Pub/Sub实时通知(低延迟)
-      - 定期同步兜底(防止遗漏)
+                        - 启动时同步一次(快速启动)
+                        - Redis Pub/Sub实时通知(低延迟)
+                        - 定期同步兜底(防止遗漏)
 
 5. **React Query集成**
 
-      - 管理后台使用React Query管理状态
-      - 自动缓存、自动重试、自动刷新
-      - 优化用户体验
+                        - 管理后台使用React Query管理状态
+                        - 自动缓存、自动重试、自动刷新
+                        - 优化用户体验
 
 ### 🔧 技术栈选择
 
@@ -2046,99 +2046,99 @@ app.add_middleware(AuthHubMiddleware, client=authhub_client)
 
 - [x] 项目结构初始化(UV + FastAPI)
 - [x] PostgreSQL数据库模型设计与实现
-    - [x] 用户表(User)
-    - [x] 系统表(System)
-    - [x] 角色表(Role)
-    - [x] 权限表(Permission)
-    - [x] 用户角色关联表(UserRole)
-    - [x] 角色权限关联表(RolePermission)
-    - [x] 路由规则表(RoutePattern)
-    - [x] 资源绑定表(ResourceBinding)
-    - [x] 审计日志表(AuditLog)
+                - [x] 用户表(User)
+                - [x] 系统表(System)
+                - [x] 角色表(Role)
+                - [x] 权限表(Permission)
+                - [x] 用户角色关联表(UserRole)
+                - [x] 角色权限关联表(RolePermission)
+                - [x] 路由规则表(RoutePattern)
+                - [x] 资源绑定表(ResourceBinding)
+                - [x] 审计日志表(AuditLog)
 - [x] Alembic数据库迁移配置
 - [x] Redis缓存封装
 - [x] RSA密钥对生成工具
 - [x] JWT Handler实现(RS256签名)
-    - [x] 用户Token生成(包含完整权限)
-    - [x] 系统Token生成(长期有效)
-    - [x] Token验证
-    - [x] 黑名单机制
+                - [x] 用户Token生成(包含完整权限)
+                - [x] 系统Token生成(长期有效)
+                - [x] Token验证
+                - [x] 黑名单机制
 - [x] 飞书OAuth2.0集成
-    - [x] 授权URL生成
-    - [x] 回调处理
-    - [x] 用户信息获取
-    - [x] 用户同步到数据库
+                - [x] 授权URL生成
+                - [x] 回调处理
+                - [x] 用户信息获取
+                - [x] 用户同步到数据库
 - [x] SSO代理端点(供SDK使用)
-    - [x] /auth/sso/login-url - 获取登录URL
-    - [x] /auth/sso/exchange-token - Token交换
-    - [x] State参数验证(防CSRF)
+                - [x] /auth/sso/login-url - 获取登录URL
+                - [x] /auth/sso/exchange-token - Token交换
+                - [x] State参数验证(防CSRF)
 - [x] 权限收集器(PermissionCollector)
-    - [x] 收集全局角色
-    - [x] 收集系统角色
-    - [x] 收集全局资源绑定
-    - [x] 收集系统资源绑定
+                - [x] 收集全局角色
+                - [x] 收集系统角色
+                - [x] 收集全局资源绑定
+                - [x] 收集系统资源绑定
 - [x] 系统管理API
-    - [x] 创建系统并生成Token
-    - [x] 系统列表查询
-    - [x] 系统详情获取
-    - [x] 系统配置同步API
-    - [x] 系统Token重新生成
-    - [x] 系统状态更新
-    - [x] 查询系统角色/权限
+                - [x] 创建系统并生成Token
+                - [x] 系统列表查询
+                - [x] 系统详情获取
+                - [x] 系统配置同步API
+                - [x] 系统Token重新生成
+                - [x] 系统状态更新
+                - [x] 查询系统角色/权限
 - [x] RBAC管理API
-    - [x] 角色CRUD
-    - [x] 权限CRUD
-    - [x] 角色-权限关联管理
-    - [x] 用户-角色分配
-    - [x] 路由规则管理
-    - [x] 资源绑定管理
-    - [x] 统计数据API
+                - [x] 角色CRUD
+                - [x] 权限CRUD
+                - [x] 角色-权限关联管理
+                - [x] 用户-角色分配
+                - [x] 路由规则管理
+                - [x] 资源绑定管理
+                - [x] 统计数据API
 - [x] 用户管理API
-    - [x] 用户列表
-    - [x] 用户详情
-    - [x] 用户权限查询
-    - [x] 用户角色管理
+                - [x] 用户列表
+                - [x] 用户详情
+                - [x] 用户权限查询
+                - [x] 用户角色管理
 - [x] 认证依赖注入
-    - [x] get_current_user
-    - [x] require_admin
-    - [x] verify_system_token
+                - [x] get_current_user
+                - [x] require_admin
+                - [x] verify_system_token
 - [x] 配置管理(Pydantic Settings)
 - [x] 日志系统
 
 #### Python SDK (100%完成)
 
 - [x] 核心客户端(AuthHubClient)
-    - [x] Token本地验证
-    - [x] 权限本地检查
-    - [x] 路由权限检查
-    - [x] 公钥同步
-    - [x] 配置同步
-    - [x] Redis Pub/Sub订阅
-    - [x] 定期配置同步
+                - [x] Token本地验证
+                - [x] 权限本地检查
+                - [x] 路由权限检查
+                - [x] 公钥同步
+                - [x] 配置同步
+                - [x] Redis Pub/Sub订阅
+                - [x] 定期配置同步
 - [x] Token验证器(TokenVerifier)
-    - [x] JWT签名验证
-    - [x] 黑名单检查
+                - [x] JWT签名验证
+                - [x] 黑名单检查
 - [x] 权限检查器(PermissionChecker)
-    - [x] 角色权限检查
-    - [x] 路由正则匹配
-    - [x] 资源权限检查
+                - [x] 角色权限检查
+                - [x] 路由正则匹配
+                - [x] 资源权限检查
 - [x] SSO客户端(SSOClient)
-    - [x] 获取登录URL
-    - [x] Token交换
-    - [x] 回调处理
+                - [x] 获取登录URL
+                - [x] Token交换
+                - [x] 回调处理
 - [x] 装饰器
-    - [x] @require_auth
-    - [x] @require_role
-    - [x] @require_permission
+                - [x] @require_auth
+                - [x] @require_role
+                - [x] @require_permission
 - [x] FastAPI中间件
-    - [x] JWT认证中间件
-    - [x] SSO集成中间件(setup_sso)
+                - [x] JWT认证中间件
+                - [x] SSO集成中间件(setup_sso)
 - [x] Flask中间件
 - [x] Django中间件
 - [x] 异常类
 - [x] 示例项目
-    - [x] FastAPI基础示例
-    - [x] FastAPI SSO示例
+                - [x] FastAPI基础示例
+                - [x] FastAPI SSO示例
 
 #### TypeScript SDK (100%完成)
 
@@ -2146,28 +2146,28 @@ app.add_middleware(AuthHubMiddleware, client=authhub_client)
 - [x] Token管理器(TokenManager)
 - [x] 认证客户端(AuthClient)
 - [x] React Hooks
-    - [x] useAuth
-    - [x] useSSO
-    - [x] usePermission
-    - [x] useRole
+                - [x] useAuth
+                - [x] useSSO
+                - [x] usePermission
+                - [x] useRole
 - [x] Vue Composables
-    - [x] useAuth
-    - [x] useSSO
+                - [x] useAuth
+                - [x] useSSO
 - [x] React组件
-    - [x] LoginButton
-    - [x] LoginPage
-    - [x] ProtectedRoute
-    - [x] SSOCallback
+                - [x] LoginButton
+                - [x] LoginPage
+                - [x] ProtectedRoute
+                - [x] SSOCallback
 - [x] Vue组件
-    - [x] LoginButton
-    - [x] LoginPage
-    - [x] ProtectedView
-    - [x] SSOCallback
+                - [x] LoginButton
+                - [x] LoginPage
+                - [x] ProtectedView
+                - [x] SSOCallback
 - [x] 类型定义
 - [x] 异常处理
 - [x] 示例项目
-    - [x] React SSO示例
-    - [x] Vue SSO示例
+                - [x] React SSO示例
+                - [x] Vue SSO示例
 
 #### 前端管理后台 (85%完成)
 
@@ -2180,32 +2180,32 @@ app.add_middleware(AuthHubMiddleware, client=authhub_client)
 - [x] 受保护路由(ProtectedRoute)
 - [x] 布局组件(MainLayout)
 - [x] 登录页面
-    - [x] 飞书扫码登录
-    - [x] 回调处理(Callback.tsx)
+                - [x] 飞书扫码登录
+                - [x] 回调处理(Callback.tsx)
 - [x] 仪表盘(Dashboard)
-    - [x] 系统统计
-    - [x] 用户统计
-    - [x] 角色统计
+                - [x] 系统统计
+                - [x] 用户统计
+                - [x] 角色统计
 - [x] 系统管理
-    - [x] 系统列表(SystemList.tsx)
-    - [x] 创建系统(SystemForm.tsx)
-    - [x] 系统详情(SystemDetail.tsx)
-    - [x] Token显示(TokenDisplay.tsx)
+                - [x] 系统列表(SystemList.tsx)
+                - [x] 创建系统(SystemForm.tsx)
+                - [x] 系统详情(SystemDetail.tsx)
+                - [x] Token显示(TokenDisplay.tsx)
 - [x] 用户管理
-    - [x] 用户列表(UserList.tsx)
-    - [x] 用户详情(UserDetail.tsx)
-    - [x] 角色分配(UserRoles.tsx)
+                - [x] 用户列表(UserList.tsx)
+                - [x] 用户详情(UserDetail.tsx)
+                - [x] 角色分配(UserRoles.tsx)
 - [x] 角色管理
-    - [x] 角色列表(RoleList.tsx)
-    - [x] 创建角色(RoleForm.tsx)
-    - [x] 编辑角色(RoleEditModal.tsx)
-    - [x] 权限配置(RolePermissions.tsx)
+                - [x] 角色列表(RoleList.tsx)
+                - [x] 创建角色(RoleForm.tsx)
+                - [x] 编辑角色(RoleEditModal.tsx)
+                - [x] 权限配置(RolePermissions.tsx)
 - [x] 权限管理
-    - [x] 权限列表(PermissionList.tsx)
-    - [x] 创建权限(PermissionForm.tsx)
-    - [x] 编辑权限(PermissionEditModal.tsx)
-    - [x] 路由规则管理(RouteRuleList.tsx)
-    - [x] 资源绑定管理(ResourceBindingList.tsx)
+                - [x] 权限列表(PermissionList.tsx)
+                - [x] 创建权限(PermissionForm.tsx)
+                - [x] 编辑权限(PermissionEditModal.tsx)
+                - [x] 路由规则管理(RouteRuleList.tsx)
+                - [x] 资源绑定管理(ResourceBindingList.tsx)
 
 #### 文档 (60%完成)
 
@@ -2224,8 +2224,8 @@ app.add_middleware(AuthHubMiddleware, client=authhub_client)
 #### 部署配置 (80%完成)
 
 - [x] Docker配置
-    - [x] backend.Dockerfile
-    - [x] frontend.Dockerfile
+                - [x] backend.Dockerfile
+                - [x] frontend.Dockerfile
 - [x] docker-compose.yml
 - [x] docker-compose-db.test.yml(测试数据库)
 - [x] 环境变量配置(.env.example)
@@ -2237,14 +2237,14 @@ app.add_middleware(AuthHubMiddleware, client=authhub_client)
 #### 后端功能增强
 
 - [ ] Redis Pub/Sub权限变更通知实现
-    - [ ] 角色创建通知
-    - [ ] 权限更新通知
-    - [ ] 用户权限变更通知
-    - [ ] Token撤销通知
+                - [ ] 角色创建通知
+                - [ ] 权限更新通知
+                - [ ] 用户权限变更通知
+                - [ ] Token撤销通知
 - [ ] 审计日志完整实现
-    - [ ] 审计日志记录服务
-    - [ ] 审计日志查询API
-    - [ ] 操作类型枚举完善
+                - [ ] 审计日志记录服务
+                - [ ] 审计日志查询API
+                - [ ] 操作类型枚举完善
 - [ ] 权限变更历史追踪
 - [ ] 批量操作API
 - [ ] 数据导入/导出
@@ -2252,9 +2252,9 @@ app.add_middleware(AuthHubMiddleware, client=authhub_client)
 #### 前端管理后台增强
 
 - [ ] 审计日志页面
-    - [ ] 权限变更历史
-    - [ ] 用户操作日志
-    - [ ] 系统访问日志
+                - [ ] 权限变更历史
+                - [ ] 用户操作日志
+                - [ ] 系统访问日志
 - [ ] 高级搜索和过滤
 - [ ] 批量操作功能
 - [ ] 数据导出功能
@@ -2266,10 +2266,10 @@ app.add_middleware(AuthHubMiddleware, client=authhub_client)
 #### 测试
 
 - [ ] 后端单元测试
-    - [ ] 认证模块测试
-    - [ ] RBAC模块测试
-    - [ ] 权限收集测试
-    - [ ] JWT Handler测试
+                - [ ] 认证模块测试
+                - [ ] RBAC模块测试
+                - [ ] 权限收集测试
+                - [ ] JWT Handler测试
 - [ ] 后端集成测试
 - [ ] SDK单元测试
 - [ ] SDK集成测试
@@ -2280,37 +2280,37 @@ app.add_middleware(AuthHubMiddleware, client=authhub_client)
 #### 文档完善
 
 - [ ] API详细文档
-    - [ ] 认证接口详细说明
-    - [ ] 系统管理接口详细说明
-    - [ ] RBAC接口详细说明
-    - [ ] 用户管理接口详细说明
+                - [ ] 认证接口详细说明
+                - [ ] 系统管理接口详细说明
+                - [ ] RBAC接口详细说明
+                - [ ] 用户管理接口详细说明
 - [ ] SDK高级用法文档
-    - [ ] Python SDK高级配置
-    - [ ] TypeScript SDK高级配置
-    - [ ] 自定义中间件开发
+                - [ ] Python SDK高级配置
+                - [ ] TypeScript SDK高级配置
+                - [ ] 自定义中间件开发
 - [ ] 部署文档
-    - [ ] Docker部署详细步骤
-    - [ ] Kubernetes部署指南
-    - [ ] 生产环境配置建议
+                - [ ] Docker部署详细步骤
+                - [ ] Kubernetes部署指南
+                - [ ] 生产环境配置建议
 - [ ] 最佳实践文档
-    - [ ] 权限设计最佳实践
-    - [ ] 安全最佳实践
-    - [ ] 性能优化建议
+                - [ ] 权限设计最佳实践
+                - [ ] 安全最佳实践
+                - [ ] 性能优化建议
 
 #### 优化和增强
 
 - [ ] 性能优化
-    - [ ] 数据库查询优化
-    - [ ] Redis缓存策略优化
-    - [ ] JWT Token大小优化
+                - [ ] 数据库查询优化
+                - [ ] Redis缓存策略优化
+                - [ ] JWT Token大小优化
 - [ ] 监控和告警
-    - [ ] Prometheus指标
-    - [ ] 健康检查端点
-    - [ ] 日志聚合配置
+                - [ ] Prometheus指标
+                - [ ] 健康检查端点
+                - [ ] 日志聚合配置
 - [ ] 高可用配置
-    - [ ] Redis哨兵/集群
-    - [ ] PostgreSQL主从复制
-    - [ ] 负载均衡配置
+                - [ ] Redis哨兵/集群
+                - [ ] PostgreSQL主从复制
+                - [ ] 负载均衡配置
 
 ### 📊 完成度总结
 
@@ -2344,70 +2344,70 @@ app.add_middleware(AuthHubMiddleware, client=authhub_client)
 
 1. **Redis Pub/Sub权限变更通知实现**
 
-      - 在RBAC API中调用notifier发布变更通知
-      - 测试权限变更的实时同步
-      - 确保配置更新能及时推送到业务系统
+                        - 在RBAC API中调用notifier发布变更通知
+                        - 测试权限变更的实时同步
+                        - 确保配置更新能及时推送到业务系统
 
 2. **基础测试覆盖**
 
-      - 编写认证模块单元测试
-      - 编写RBAC模块单元测试
-      - 编写SDK集成测试
-      - 确保核心功能的稳定性
+                        - 编写认证模块单元测试
+                        - 编写RBAC模块单元测试
+                        - 编写SDK集成测试
+                        - 确保核心功能的稳定性
 
 3. **生产环境部署测试**
 
-      - 使用Docker Compose部署完整环境
-      - 测试高并发场景
-      - 测试故障恢复(Redis/PostgreSQL重启)
-      - 验证性能指标
+                        - 使用Docker Compose部署完整环境
+                        - 测试高并发场景
+                        - 测试故障恢复(Redis/PostgreSQL重启)
+                        - 验证性能指标
 
 ### 📝 优先级 P1 (近期完成)
 
 1. **审计日志完整实现**
 
-      - 实现审计日志记录服务
-      - 在关键操作中添加审计日志
-      - 实现审计日志查询API
-      - 开发前端审计日志页面
+                        - 实现审计日志记录服务
+                        - 在关键操作中添加审计日志
+                        - 实现审计日志查询API
+                        - 开发前端审计日志页面
 
 2. **API文档完善**
 
-      - 补充API详细说明
-      - 添加更多示例代码
-      - 添加错误码说明
-      - 生成Postman Collection
+                        - 补充API详细说明
+                        - 添加更多示例代码
+                        - 添加错误码说明
+                        - 生成Postman Collection
 
 3. **部署文档完善**
 
-      - 编写详细的Docker部署指南
-      - 编写生产环境配置建议
-      - 添加监控和告警配置指南
-      - 添加备份和恢复指南
+                        - 编写详细的Docker部署指南
+                        - 编写生产环境配置建议
+                        - 添加监控和告警配置指南
+                        - 添加备份和恢复指南
 
 ### 🚀 优先级 P2 (计划完成)
 
 1. **性能优化**
 
-      - 数据库查询优化(添加合适的索引)
-      - Redis缓存策略优化
-      - JWT Token大小优化(压缩策略)
-      - 配置同步性能优化
+                        - 数据库查询优化(添加合适的索引)
+                        - Redis缓存策略优化
+                        - JWT Token大小优化(压缩策略)
+                        - 配置同步性能优化
 
 2. **高级功能**
 
-      - 批量操作API
-      - 数据导入/导出
-      - 权限树拖拽组件
-      - 路由规则正则测试工具
-      - 国际化支持
+                        - 批量操作API
+                        - 数据导入/导出
+                        - 权限树拖拽组件
+                        - 路由规则正则测试工具
+                        - 国际化支持
 
 3. **Kubernetes部署支持**
 
-      - 编写K8s部署配置
-      - 添加健康检查端点
-      - 配置水平扩展
-      - 添加Prometheus监控
+                        - 编写K8s部署配置
+                        - 添加健康检查端点
+                        - 配置水平扩展
+                        - 添加Prometheus监控
 
 ### 💡 建议和注意事项
 
