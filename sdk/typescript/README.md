@@ -21,11 +21,11 @@
 ## 安装
 
 ```bash
-npm install @authhub/sdk
+npm install @chenjing194/authhub-sdk
 # 或
-yarn add @authhub/sdk
+yarn add @chenjing194/authhub-sdk
 # 或
-pnpm add @authhub/sdk
+pnpm add @chenjing194/authhub-sdk
 ```
 
 ## 快速开始
@@ -71,7 +71,7 @@ async def get_me(request: Request):
 #### React
 
 ```tsx
-import { useAuth } from '@authhub/sdk';
+import { useAuth } from '@chenjing194/authhub-sdk';
 
 function App() {
   const { user, loading, isAuthenticated, login, logout } = useAuth({
@@ -97,7 +97,7 @@ function App() {
 
 ```vue
 <script setup>
-import { useAuthVue } from '@authhub/sdk';
+import { useAuthVue } from '@chenjing194/authhub-sdk';
 
 const { user, loading, isAuthenticated, login, logout } = useAuthVue({
   backendUrl: 'http://localhost:8001'
@@ -146,7 +146,7 @@ API 与 React 版本相同，但返回值是 `computed` 包装的响应式引用
 如果你需要更底层的控制，可以直接使用 `AuthClient`：
 
 ```typescript
-import { AuthClient } from '@authhub/sdk';
+import { AuthClient } from '@chenjing194/authhub-sdk';
 
 const client = new AuthClient({
   backendUrl: 'http://localhost:8001'
