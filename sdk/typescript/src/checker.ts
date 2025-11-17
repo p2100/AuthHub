@@ -25,7 +25,8 @@ export class PermissionChecker {
     const permCode = `${resource}:${action}`;
 
     // 3. 检查系统角色
-    const userRoles = tokenPayload.system_roles[this.namespace] || [];
+    const systemRoles = tokenPayload.system_roles || {};
+    const userRoles = systemRoles[this.namespace] || [];
 
     for (const roleName of userRoles) {
       const roleConfig = config.roles[roleName];
@@ -62,7 +63,13 @@ export class PermissionChecker {
     }
 
     // 获取用户的系统角色
-    const userRoles = tokenPayload.system_roles[this.namespace] || [];
+    const systemRoles = tokenPayload.system_roles || {};
+    const userRoles = systemRoles[this.namespace] || [];
+
+    // 检查是否有路由规则配置
+    if (!config.route_patterns || config.route_patterns.length === 0) {
+      return false;
+    }
 
     // 遍历路由规则(按优先级排序)
     const sortedPatterns = [...config.route_patterns].sort(
@@ -99,13 +106,15 @@ export class PermissionChecker {
     resourceId: number
   ): boolean {
     // 检查全局资源
-    const globalResources = tokenPayload.global_resources[resourceType] || [];
-    if (globalResources.includes(resourceId)) {
+    const globalResources = tokenPayload.global_resources || {};
+    const globalResourceList = globalResources[resourceType] || [];
+    if (globalResourceList.includes(resourceId)) {
       return true;
     }
 
     // 检查系统资源
-    const namespaceResources = tokenPayload.system_resources[this.namespace] || {};
+    const systemResources = tokenPayload.system_resources || {};
+    const namespaceResources = systemResources[this.namespace] || {};
     const resources = namespaceResources[resourceType] || [];
     if (resources.includes(resourceId)) {
       return true;

@@ -33,14 +33,15 @@ export interface TokenPayload extends User {
 export interface PermissionConfig {
   version: string;
   roles: Record<string, RoleConfig>;
-  routes: RouteConfig[];
+  routes?: RouteConfig[];
+  route_patterns?: RoutePatternConfig[];
 }
 
 export interface RoleConfig {
   id: number;
   code: string;
   name: string;
-  permissions: PermissionItem[];
+  permissions: string[]; // 权限代码数组，如 ["user:read", "user:write"]
 }
 
 export interface PermissionItem {
@@ -53,4 +54,21 @@ export interface RouteConfig {
   path: string;
   method: string;
   roles: string[];
+}
+
+export interface RoutePatternConfig {
+  pattern: string;
+  method: string;
+  role: string;
+  priority: number;
+}
+
+// 后端使用的配置类型(用于 AuthHubClient)
+export interface AuthHubOptions {
+  authhubUrl: string;
+  systemId: string;
+  systemToken: string;
+  namespace: string;
+  enableCache?: boolean;
+  syncInterval?: number;
 }

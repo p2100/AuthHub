@@ -49,7 +49,12 @@ export interface UseAuthResult {
  * ```
  */
 export function useAuth(options: UseAuthOptions): UseAuthResult {
-  const [client] = useState(() => new AuthClient(options));
+  const [client] = useState(() => new AuthClient({
+    backendUrl: options.backendUrl,
+    loginPath: options.loginPath,
+    logoutPath: options.logoutPath,
+    mePath: options.mePath,
+  }));
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -74,7 +79,9 @@ export function useAuth(options: UseAuthOptions): UseAuthResult {
 
   const login = useCallback(
     (returnUrl?: string) => {
-      client.login(returnUrl || window.location.pathname);
+      if (typeof window !== 'undefined') {
+        client.login(returnUrl || window.location.pathname);
+      }
     },
     [client]
   );

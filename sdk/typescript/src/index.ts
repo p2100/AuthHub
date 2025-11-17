@@ -7,7 +7,7 @@
 
 // 核心客户端
 export { AuthClient } from './auth-client';
-export type { AuthConfig, User } from './auth-client';
+export type { AuthConfig, User } from './types';
 
 // React 支持
 export { useAuth } from './hooks/useAuth';

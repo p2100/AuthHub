@@ -1,0 +1,3 @@
+#!/bin/bash
+# Source this file to load PyPI token
+export UV_PUBLISH_TOKEN='pypi-AgEIcHlwaS5vcmcCJDIyMDdjOTNmLTNmY2EtNGZhMy04ZDBmLThlYzhmYjliZTUxMwACKlszLCI3NDZkZjMwMC03YTM3LTRkYjAtYTEzOS03MmJhMDYzMjI2ZWIiXQAABiBAelChUnOtzEiheozu6VXm_W6KMSmmrzXJBoFqJo65Ng'
