@@ -13,11 +13,12 @@
 ## 功能
 
 - ✅ **飞书 SSO 登录**：点击按钮跳转到业务后端
-- ✅ **自动回调处理**：后端完成 OAuth 流程
+- ✅ **自动回调处理**：后端完成 OAuth 流程，回跳到前端
 - ✅ **安全的 Token 管理**：HttpOnly Cookie
 - ✅ **简单的状态管理**：只需一个 `useAuth` Hook
 - ✅ **用户信息展示**：从后端 API 获取
 - ✅ **登出功能**：清除 Cookie
+- ✅ **跨域支持**：后端配置 CORS，支持前后端分离
 
 ## 前置要求
 
@@ -142,7 +143,7 @@ async def get_me(request: Request):
 ```
 1. 用户点击"登录"按钮
    ↓
-2. 前端跳转到业务后端 /auth/login
+2. 前端跳转到业务后端 /auth/login?redirect=http://localhost:5173/dashboard
    ↓
 3. 后端生成飞书 OAuth URL 并重定向
    ↓
@@ -152,12 +153,17 @@ async def get_me(request: Request):
    ↓
 6. 后端交换 Token，设置 HttpOnly Cookie
    ↓
-7. 重定向回前端 /dashboard
+7. 后端重定向回前端 http://localhost:5173/dashboard
    ↓
-8. 前端从 /api/me 获取用户信息
+8. 前端从后端 /api/me 获取用户信息（携带 Cookie）
    ↓
 9. 展示用户信息
 ```
+
+**关键点**：
+- 前端传递**完整的 URL**（`http://localhost:5173/dashboard`）而不是相对路径
+- 后端设置 Cookie 后重定向回前端
+- 前端后续请求自动携带 Cookie 进行认证
 
 ## 与传统 SDK 的对比
 

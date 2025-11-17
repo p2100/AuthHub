@@ -1,12 +1,22 @@
 """FastAPI SSO集成示例"""
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from authhub_sdk import AuthHubClient
 from authhub_sdk.middleware.fastapi_sso import setup_sso
 
 # 创建FastAPI应用
 app = FastAPI(title="FastAPI SSO Example")
+
+# 配置CORS - 允许前端访问
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # 前端地址
+    allow_credentials=True,  # 重要！允许携带 Cookie
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 初始化AuthHub客户端
 authhub_client = AuthHubClient(
@@ -29,7 +39,7 @@ setup_sso(
     cookie_httponly=True,  # 防止XSS
     cookie_samesite="lax",  # 防止CSRF
     cookie_max_age=3600,  # 1小时
-    public_routes=["/health", "/docs", "/openapi.json"],  # 公开路由
+    public_routes=["/health", "/docs", "/openapi.json", "/debug/cookies"],  # 公开路由
     login_required=True,  # 要求登录
     redirect_to_login=True,  # 未登录时重定向到登录页
     after_login_redirect="/dashboard",  # 登录成功后重定向
@@ -40,6 +50,15 @@ setup_sso(
 async def health():
     """健康检查(公开路由)"""
     return {"status": "ok"}
+
+
+@app.get("/debug/cookies")
+async def debug_cookies(request: Request):
+    """调试：查看所有 Cookie(公开路由)"""
+    return {
+        "cookies": dict(request.cookies),
+        "headers": dict(request.headers),
+    }
 
 
 @app.get("/")
@@ -77,6 +96,26 @@ async def dashboard(request: Request):
             "email": user.get("email"),
             "roles": user.get("global_roles", []),
         },
+    }
+
+
+@app.get("/api/me")
+async def get_current_user(request: Request):
+    """
+    获取当前登录用户信息(前端需要)
+
+    返回完整的用户信息供前端 Dashboard 使用
+    中间件会自动验证 Token 并注入 request.state.user
+    """
+    # 中间件已经验证了 Token，直接使用 request.state.user
+    user = request.state.user
+
+    return {
+        "sub": user.get("sub"),
+        "username": user.get("username"),
+        "email": user.get("email"),
+        "global_roles": user.get("global_roles", []),
+        "system_roles": user.get("system_roles", {}),
     }
 
 

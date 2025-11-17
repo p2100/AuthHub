@@ -45,7 +45,12 @@ class AuthClient {
   login(returnUrl?: string): void {
     const url = new URL(this.config.loginPath, this.config.backendUrl);
     if (returnUrl) {
-      url.searchParams.set('return_url', returnUrl);
+      // 将相对路径转换为完整的前端 URL
+      const fullReturnUrl = returnUrl.startsWith('http')
+        ? returnUrl
+        : window.location.origin + returnUrl;
+      // 后端期望的参数名是 'redirect' 而不是 'return_url'
+      url.searchParams.set('redirect', fullReturnUrl);
     }
     window.location.href = url.toString();
   }

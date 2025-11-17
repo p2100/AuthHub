@@ -2,6 +2,8 @@
 
 本指南详细说明如何在业务系统中集成 AuthHub SSO 登录功能。
 
+> 📚 **推荐阅读**: [SDK 完全接入指南](./sdk/complete-integration-guide.md) - 包含最新的前后端分离架构、完整示例和常见问题解决方案
+
 ## 概述
 
 AuthHub SDK 提供了完整的 SSO 登录模块，支持 **FastAPI**、**React** 和 **Vue** 框架。通过简单的配置，业务系统可以快速接入飞书 SSO 登录，无需自行实现复杂的 OAuth 流程。
