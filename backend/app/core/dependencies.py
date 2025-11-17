@@ -72,27 +72,48 @@ def verify_system_token(token: str, db: AsyncSession) -> dict:
 
     用于系统间API调用的认证
     """
+    print(f"🔍 [系统Token验证] 开始验证")
+    print(f"🔍 [系统Token验证] Token前30字符: {token[:30]}...")
+
     try:
         # 读取公钥
         with open(settings.JWT_PUBLIC_KEY_PATH, "r") as f:
             public_key = f.read()
+        print(f"✅ [系统Token验证] 公钥读取成功")
 
         # 验证Token
         payload = jwt.decode(token, public_key, algorithms=[settings.JWT_ALGORITHM])
+        print(f"✅ [系统Token验证] Token解码成功")
+        print(f"🔍 [系统Token验证] Payload: {payload}")
 
         # 验证Token类型是否为系统Token
-        token_type = payload.get("type")
+        # 注意: 使用 user_type 字段而不是 type 字段
+        token_type = payload.get("user_type")
+        print(f"🔍 [系统Token验证] Token类型(user_type): {token_type}")
+
         if token_type != "system":
+            print(f"❌ [系统Token验证] Token类型不是system，而是: {token_type}")
             raise HTTPException(status_code=401, detail="无效的Token类型")
 
         # 检查系统是否存在
         system_code = payload.get("sub")
+        print(f"🔍 [系统Token验证] 系统代码: {system_code}")
+
         if not system_code:
+            print(f"❌ [系统Token验证] Token中缺少系统标识")
             raise HTTPException(status_code=401, detail="Token中缺少系统标识")
 
+        print(f"✅ [系统Token验证] 验证通过")
         return payload
 
-    except jwt.ExpiredSignatureError:
+    except jwt.ExpiredSignatureError as e:
+        print(f"❌ [系统Token验证] Token已过期: {e}")
         raise HTTPException(status_code=401, detail="Token已过期")
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as e:
+        print(f"❌ [系统Token验证] Token无效: {e}")
         raise HTTPException(status_code=401, detail="Token无效")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ [系统Token验证] 未知错误: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=401, detail=f"Token验证失败: {str(e)}")

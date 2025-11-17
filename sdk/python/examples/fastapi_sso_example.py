@@ -12,8 +12,8 @@ app = FastAPI(title="FastAPI SSO Example")
 authhub_client = AuthHubClient(
     authhub_url="http://localhost:8000",
     system_id="1",  # 系统ID
-    system_token="your_system_token",
-    namespace="system_a",  # 系统代码
+    system_token="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkYXRhLWNlbnRlciIsInVzZXJfdHlwZSI6InN5c3RlbSIsInN5c3RlbV9uYW1lIjoiXHU2NTcwXHU2MzZlXHU1ZTczXHU1M2YwIiwiZXhwIjoxNzk0ODgzOTc3LCJpYXQiOjE3NjMzNDc5NzcsImp0aSI6InN5c3RlbV9kYXRhLWNlbnRlcl8xNzYzMzE5MTc3In0.rkqllcDUM_wjANolpBRkrpv5XHN7YpWP1MZzEO1D6TY0HF8GMDQwL0eFXABklt3Y5lFMbgmF1iY-s2ov_CHw_ruf_wxVMoBL8gI3YVW65ePpLjqVW8T5_xXwVx0NXkQq-i9-v-cDry2oJ1hwqCQbGCbvLQtIgbrgL1xdayRXsIMaueZxFwcB11vBJe6RJIdqz3Z3f07v7rfBYtCxkumVd5dTLIKzGf349TYj5MASZ-BQQyHYxGJ5-6ugPPVh_MA1pgDqkA9itRINRkSjNr6leUuM_1jz-yjKKY9z6_klAVCBCFALY2subsJ3PqVX3KIYBqhgoyNx7yZX8dj-MFp9vw",
+    namespace="data-center",  # 系统代码
     redis_url="redis://localhost:6379/0",
 )
 
