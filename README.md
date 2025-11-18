@@ -128,12 +128,119 @@ pnpm dev
 docker-compose up -d
 ```
 
+## 🚀 SDK 快速开始
+
+### Python SDK
+
+#### 安装
+
+```bash
+# 基础安装
+pip install authhub-sdk
+
+# 包含FastAPI支持
+pip install authhub-sdk[fastapi]
+
+# 包含Flask支持
+pip install authhub-sdk[flask]
+```
+
+#### FastAPI 集成(SSO登录)
+
+```python
+from fastapi import FastAPI, Request
+from authhub_sdk import AuthHubClient
+from authhub_sdk.middleware.fastapi_sso import setup_sso
+
+app = FastAPI()
+
+# 初始化客户端
+client = AuthHubClient(
+    authhub_url="http://localhost:8000",
+    system_id="your_system_id",
+    system_token="your_system_token",
+    namespace="system_a",
+    redis_url="redis://localhost:6379"
+)
+
+# 一行代码集成SSO登录！
+setup_sso(
+    app,
+    client=client,
+    login_required=True,
+    public_routes=['/health', '/docs']
+)
+
+@app.get("/dashboard")
+async def dashboard(request: Request):
+    user = request.state.user  # 自动注入用户信息
+    return {"user": user.get("username")}
+```
+
+**自动提供的路由:**
+- `GET /auth/login` - 触发SSO登录
+- `GET /auth/callback` - SSO回调处理
+- `GET/POST /auth/logout` - 登出
+
+更多示例: [sdk/python/examples](./sdk/python/examples)
+
+### TypeScript SDK
+
+#### 安装
+
+```bash
+npm install @authhub/sdk
+# 或
+yarn add @authhub/sdk
+```
+
+#### React 集成
+
+```typescript
+import { AuthHubProvider, useAuthHub } from '@authhub/sdk/react';
+
+function App() {
+  return (
+    <AuthHubProvider
+      config={{
+        authhubUrl: 'http://localhost:8000',
+        systemId: 'your_system_id',
+        systemToken: 'your_system_token',
+        namespace: 'system_a'
+      }}
+    >
+      <Dashboard />
+    </AuthHubProvider>
+  );
+}
+
+function Dashboard() {
+  const { user, login, logout, checkPermission } = useAuthHub();
+
+  if (!user) {
+    return <button onClick={login}>登录</button>;
+  }
+
+  return (
+    <div>
+      <h1>欢迎, {user.username}</h1>
+      <button onClick={logout}>登出</button>
+      {checkPermission('document', 'write') && (
+        <button>创建文档</button>
+      )}
+    </div>
+  );
+}
+```
+
+更多示例: [sdk/typescript/examples](./sdk/typescript/examples)
+
 ## 📖 文档
 
 - [架构设计](./docs/architecture/overview.md)
-- [API文档](./docs/api/)
-- [Python SDK文档](./docs/sdk/python/quickstart.md)
-- [TypeScript SDK文档](./docs/sdk/typescript/quickstart.md)
+- [API文档](./backend/app)
+- [Python SDK示例](./sdk/python/examples)
+- [TypeScript SDK示例](./sdk/typescript/examples)
 - [系统接入指南](./docs/user-guide/system-registration.md)
 
 ## 🔧 技术栈
