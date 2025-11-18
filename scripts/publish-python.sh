@@ -49,23 +49,23 @@ if [[ "$update_version" == "y" ]]; then
     case $version_type in
         1)
             # patch: 0.1.0 -> 0.1.1
-            uv version --bump patch
-            log_info "版本已更新: $CURRENT_VERSION -> patch"
+            log_info "执行: uv version --bump patch"
+            uv version --bump patch --no-sync
             ;;
         2)
             # minor: 0.1.0 -> 0.2.0
-            uv version --bump minor
-            log_info "版本已更新: $CURRENT_VERSION -> minor"
+            log_info "执行: uv version --bump minor"
+            uv version --bump minor --no-sync
             ;;
         3)
             # major: 0.1.0 -> 1.0.0
-            uv version --bump major
-            log_info "版本已更新: $CURRENT_VERSION -> major"
+            log_info "执行: uv version --bump major"
+            uv version --bump major --no-sync
             ;;
         4)
-            read -p "请输入新版本号: " custom_version
-            uv version "$custom_version"
-            log_info "版本已更新: $CURRENT_VERSION -> $custom_version"
+            read -p "请输入新版本号: " NEW_VERSION
+            log_info "执行: uv version $NEW_VERSION"
+            uv version "$NEW_VERSION" --no-sync
             ;;
         *)
             log_warn "使用当前版本"
@@ -73,7 +73,7 @@ if [[ "$update_version" == "y" ]]; then
     esac
 
     NEW_VERSION=$(grep -E '^version\s*=' pyproject.toml | cut -d'=' -f2 | sed 's/[" ]//g')
-    log_info "新版本: v$NEW_VERSION"
+    log_info "版本已更新: $CURRENT_VERSION -> $NEW_VERSION"
 fi
 
 # 3. 运行测试
@@ -87,7 +87,10 @@ fi
 # 4. 构建包
 log_info "构建包..."
 rm -rf dist/
-uv build
+
+# 使用 --no-sources 确保包可以独立构建（推荐用于发布）
+log_info "执行: uv build --no-sources"
+uv build --no-sources
 
 # 5. 显示构建结果
 echo ""
@@ -111,23 +114,40 @@ fi
 # 7. 发布
 if [[ "$ENVIRONMENT" == "test" ]]; then
     log_info "发布到 Test PyPI..."
-    uv publish --publish-url https://test.pypi.org/legacy/
-elif [[ "$ENVIRONMENT" == "prod" ]]; then
-    log_info "发布到 PyPI..."
-
-    # 检查 token
+    
+    # 检查 Test PyPI token
     if [[ -z "$UV_PUBLISH_TOKEN" ]]; then
         log_error "未设置 UV_PUBLISH_TOKEN 环境变量"
-        echo "请设置: export UV_PUBLISH_TOKEN='pypi-your-token'"
+        echo "请设置: export UV_PUBLISH_TOKEN='pypi-your-test-token'"
+        echo "获取 token: https://test.pypi.org/manage/account/token/"
+        exit 1
+    fi
+    
+    log_info "执行: uv publish --publish-url https://test.pypi.org/legacy/"
+    uv publish --publish-url https://test.pypi.org/legacy/
+    
+    log_info "发布成功!"
+    log_info "请访问: https://test.pypi.org/project/authhub-sdk/"
+    
+elif [[ "$ENVIRONMENT" == "prod" ]]; then
+    log_info "发布到生产 PyPI..."
+
+    # 检查 PyPI token
+    if [[ -z "$UV_PUBLISH_TOKEN" ]]; then
+        log_error "未设置 UV_PUBLISH_TOKEN 环境变量"
+        echo "请设置: export UV_PUBLISH_TOKEN='pypi-your-prod-token'"
+        echo "获取 token: https://pypi.org/manage/account/token/"
         exit 1
     fi
 
+    log_info "执行: uv publish"
     uv publish
+    
+    log_info "发布成功!"
+    log_info "请访问: https://pypi.org/project/authhub-sdk/"
+    
 else
     log_error "未知环境: $ENVIRONMENT"
     echo "使用方法: $0 [test|prod]"
     exit 1
 fi
-
-log_info "发布成功!"
-log_info "请访问: https://pypi.org/project/authhub-sdk/"
