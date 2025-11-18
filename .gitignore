@@ -22,10 +22,13 @@ dist/
 .idea/
 *.swp
 
-# 密钥
+# 密钥和Token
 keys/
 *.pem
 *.key
+*-token.sh
+pypi-token.sh
+scripts/pypi-token.sh
 
 # 数据库
 *.db
