@@ -6,7 +6,7 @@ set -e
 
 SDK_PATH="/Users/leo/code/work/AuthHub/sdk/python"
 ENVIRONMENT=${1:-"dry-run"}
-
+export UV_PUBLISH_TOKEN='pypi-AgEIcHlwaS5vcmcCJDIyMDdjOTNmLTNmY2EtNGZhMy04ZDBmLThlYzhmYjliZTUxMwACKlszLCI3NDZkZjMwMC03YTM3LTRkYjAtYTEzOS03MmJhMDYzMjI2ZWIiXQAABiBAelChUnOtzEiheozu6VXm_W6KMSmmrzXJBoFqJo65Ng'
 echo "===== AuthHub Python SDK 发布工具 ====="
 echo "环境: $ENVIRONMENT"
 echo "SDK路径: $SDK_PATH"
