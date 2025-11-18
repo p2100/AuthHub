@@ -4,10 +4,8 @@ version = "0.2.0"
 description = "AuthHub Python SDK - 统一权限平台SDK"
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [
-    {name = "AuthHub Team", email = "sdk@authhub.com"}
-]
-license = {text = "MIT"}
+authors = [{ name = "AuthHub Team", email = "sdk@authhub.com" }]
+license = { text = "MIT" }
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -23,6 +21,7 @@ dependencies = [
     "cryptography>=41.0.7",
     "fastapi>=0.121.2",
     "uvicorn>=0.38.0",
+    "loguru>=0.7.0",
 ]
 
 [project.optional-dependencies]
@@ -50,4 +49,3 @@ line-length = 100
 
 [tool.ruff]
 line-length = 100
-
