@@ -16,7 +16,7 @@ const EditRoleModal = ({ visible, role, onClose, onSuccess }: EditRoleModalProps
 
   // 更新角色
   const updateMutation = useMutation({
-    mutationFn: (data: RoleUpdate) => apiPut<RoleUpdate, Role>(`/rbac/roles/${role.id}`, data),
+    mutationFn: (data: RoleUpdate) => apiPut<Role>(`/rbac/roles/${role.id}`, data),
     onSuccess: () => {
       message.success('角色更新成功')
       onSuccess()

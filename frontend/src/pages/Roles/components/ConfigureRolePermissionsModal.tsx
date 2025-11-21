@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Modal, Transfer, message } from 'antd'
+import type { TransferProps } from 'antd'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { apiGet, apiPut } from '@/utils/api'
 import type { Role, Permission } from '@/types/api'
@@ -42,6 +43,11 @@ const ConfigureRolePermissionsModal = ({ visible, role, onClose, onSuccess }: Co
     updateMutation.mutate(targetKeys)
   }
 
+  const handleChange: TransferProps['onChange'] = (newTargetKeys) => {
+    // 将 Key[] 转换为 number[]
+    setTargetKeys(newTargetKeys.map(key => Number(key)))
+  }
+
   const dataSource = permissions?.map((perm) => ({
     key: perm.id,
     title: `${perm.name} (${perm.code})`,
@@ -61,18 +67,18 @@ const ConfigureRolePermissionsModal = ({ visible, role, onClose, onSuccess }: Co
         dataSource={dataSource}
         titles={['可选权限', '已分配权限']}
         targetKeys={targetKeys}
-        onChange={setTargetKeys}
+        onChange={handleChange}
         render={(item) => item.title}
         listStyle={{
           width: 300,
           height: 400,
         }}
-        loading={isLoading}
         showSearch
         filterOption={(inputValue, item) =>
           item.title!.toLowerCase().includes(inputValue.toLowerCase())
         }
       />
+      {isLoading && <div style={{ textAlign: 'center', padding: '20px' }}>加载中...</div>}
     </Modal>
   )
 }

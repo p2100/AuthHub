@@ -4,7 +4,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { apiGet, apiPost, getToken, setToken, setRefreshToken, getRefreshToken, clearToken } from '@/utils/api'
-import type { UserInfo, TokenResponse } from '@/types/api'
+import type { UserInfo } from '@/types/api'
 
 interface AuthContextType {
   user: UserInfo | null

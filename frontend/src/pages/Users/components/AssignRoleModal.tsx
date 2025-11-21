@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Modal, Select, Form, message, Spin } from 'antd'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { apiGet, apiPost } from '@/utils/api'
@@ -14,7 +14,6 @@ interface AssignRoleModalProps {
 
 const AssignRoleModal = ({ visible, userId, username, onClose, onSuccess }: AssignRoleModalProps) => {
   const [form] = Form.useForm()
-  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
 
   // 获取所有角色列表
   const { data: roles, isLoading } = useQuery<Role[]>({
@@ -40,7 +39,6 @@ const AssignRoleModal = ({ visible, userId, username, onClose, onSuccess }: Assi
   useEffect(() => {
     if (!visible) {
       form.resetFields()
-      setSelectedRoleId(null)
     }
   }, [visible, form])
 
@@ -77,7 +75,6 @@ const AssignRoleModal = ({ visible, userId, username, onClose, onSuccess }: Assi
                 value: role.id,
                 label: `${role.name} (${role.namespace})`,
               }))}
-              onChange={(value) => setSelectedRoleId(value)}
             />
           </Form.Item>
         </Form>

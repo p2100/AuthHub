@@ -16,7 +16,7 @@ const EditSystemModal = ({ visible, system, onClose, onSuccess }: EditSystemModa
 
   // 更新系统
   const updateMutation = useMutation({
-    mutationFn: (data: SystemUpdate) => apiPut<SystemUpdate, System>(`/systems/${system.id}`, data),
+    mutationFn: (data: SystemUpdate) => apiPut<System>(`/systems/${system.id}`, data),
     onSuccess: () => {
       message.success('系统更新成功')
       onSuccess()

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Drawer, Descriptions, Tag, Button, Space, Modal, Input, message, Tabs, Table } from 'antd'
-import { ReloadOutlined, CopyOutlined } from '@ant-design/icons'
+import { ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { apiGet, apiPost } from '@/utils/api'
 import type { System, SystemWithToken, Role, Permission } from '@/types/api'
@@ -31,7 +31,7 @@ const SystemDetailDrawer = ({ visible, system, onClose, onSuccess }: SystemDetai
 
   // 重新生成Token
   const regenerateTokenMutation = useMutation({
-    mutationFn: () => apiPost<{}, SystemWithToken>(`/systems/${system.id}/token/regenerate`, {}),
+    mutationFn: () => apiPost<SystemWithToken>(`/systems/${system.id}/token/regenerate`, {}),
     onSuccess: (data) => {
       Modal.success({
         title: '系统Token已重新生成',

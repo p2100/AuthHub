@@ -22,7 +22,7 @@ const CreateRoleModal = ({ visible, onClose, onSuccess }: CreateRoleModalProps) 
 
   // 创建角色
   const createMutation = useMutation({
-    mutationFn: (data: RoleCreate) => apiPost<RoleCreate, Role>('/rbac/roles', data),
+    mutationFn: (data: RoleCreate) => apiPost<Role>('/rbac/roles', data),
     onSuccess: () => {
       message.success('角色创建成功')
       onSuccess()

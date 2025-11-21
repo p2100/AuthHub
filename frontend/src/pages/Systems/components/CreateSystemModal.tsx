@@ -15,7 +15,7 @@ const CreateSystemModal = ({ visible, onClose, onSuccess }: CreateSystemModalPro
 
   // 创建系统
   const createMutation = useMutation({
-    mutationFn: (data: SystemCreate) => apiPost<SystemCreate, SystemWithToken>('/systems', data),
+    mutationFn: (data: SystemCreate) => apiPost<SystemWithToken>('/systems', data),
     onSuccess: (data) => {
       // 显示系统Token
       Modal.success({

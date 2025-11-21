@@ -3,7 +3,7 @@ import { Table, Tag, Input, Select, Button, Space, Switch, message, Spin } from 
 import { SearchOutlined, UserOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPut } from '@/utils/api'
-import type { User, UserListResponse, UserStatusUpdate } from '@/types/api'
+import type { User, UserListResponse } from '@/types/api'
 import UserPermissionModal from './components/UserPermissionModal'
 import AssignRoleModal from './components/AssignRoleModal'
 
@@ -35,7 +35,7 @@ const UserList = () => {
   // 更新用户状态
   const updateStatusMutation = useMutation({
     mutationFn: ({ userId, status }: { userId: number; status: 'active' | 'inactive' }) =>
-      apiPut<UserStatusUpdate, User>(`/users/${userId}/status`, { status }),
+      apiPut<User>(`/users/${userId}/status`, { status }),
     onSuccess: () => {
       message.success('用户状态更新成功')
       queryClient.invalidateQueries({ queryKey: ['users'] })
@@ -67,7 +67,7 @@ const UserList = () => {
       title: '用户名',
       dataIndex: 'username',
       key: 'username',
-      render: (text: string, record: User) => (
+      render: (text: string) => (
         <Space>
           <UserOutlined />
           <span>{text}</span>
