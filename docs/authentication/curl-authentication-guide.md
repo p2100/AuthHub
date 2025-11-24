@@ -4,6 +4,59 @@
 
 本文档提供一个**不依赖任何框架**的纯 curl 方式，演示如何与 AuthHub 后端进行登录和鉴权。适用于测试、调试或在没有 SDK 的环境下快速集成。
 
+## ⚠️ 重要说明：两种使用场景
+
+### 场景1：用户直接登录（本文档）
+
+**适用场景**：
+- API 测试和调试
+- 移动 App 直接集成
+- 前端 SPA 直接调用后端
+
+**特点**：
+- ✅ **不需要** `system_id` 和 `system_token`
+- ✅ 用户直接与 AuthHub 交互
+- ✅ 返回的 Token 包含用户在所有系统的权限
+- ✅ 客户端自行管理 Token 和权限检查
+
+```bash
+# 示例：直接调用 AuthHub API，无需系统凭证
+curl -X POST "http://localhost:8000/auth/sso/login-url" \
+  -H "Content-Type: application/json" \
+  -d '{"redirect_uri": "http://localhost:3000/callback"}'
+```
+
+### 场景2：业务系统集成 SSO（参考 SDK 文档）
+
+**适用场景**：
+- 企业内部系统接入统一认证
+- 微服务架构中的服务认证
+- 多租户系统的权限隔离
+
+**特点**：
+- ❌ **需要** `system_id` 和 `system_token`（业务系统的身份凭证）
+- ✅ 业务系统代理用户登录
+- ✅ 支持权限查询和实时同步（Redis Pub/Sub）
+- ✅ 服务端权限检查（更安全）
+
+```python
+# 示例：业务系统集成需要系统凭证
+authhub_client = AuthHubClient(
+    authhub_url="http://localhost:8000",
+    system_id="1",  # 必需：系统ID
+    system_token="eyJ...",  # 必需：系统Token
+    namespace="data-center",
+    redis_url="redis://localhost:6379/0",
+)
+```
+
+📖 **如需集成业务系统 SSO，请参考**：
+- **[⭐ 业务系统纯 HTTP/Curl SSO 集成指南](./curl-system-integration-guide.md)** - 不依赖 SDK 的系统集成方案
+- [SDK 完整集成指南](../sdk/complete-integration-guide.md)
+- [Python FastAPI SSO 示例](../../sdk/python/examples/fastapi_sso_example.py)
+
+---
+
 ## 前置条件
 
 - AuthHub 后端服务已启动（默认运行在 `http://localhost:8000`）
