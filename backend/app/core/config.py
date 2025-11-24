@@ -24,8 +24,8 @@ class Settings(BaseSettings):
 
     # JWT配置
     JWT_ALGORITHM: str = "RS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 60 * 24 * 30
     JWT_PRIVATE_KEY_PATH: str = "./keys/private_key.pem"
     JWT_PUBLIC_KEY_PATH: str = "./keys/public_key.pem"
 
