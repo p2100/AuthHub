@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # AuthHub 后端服务（包含前端静态文件）
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: authhub-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # 使用外部数据库，通过环境变量配置
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      PORT: ${PORT:-8080}
+      HOST: 0.0.0.0
+      # 飞书配置
+      FEISHU_APP_ID: ${FEISHU_APP_ID}
+      FEISHU_APP_SECRET: ${FEISHU_APP_SECRET}
+      # JWT 配置
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/app/keys/private_key.pem}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/app/keys/public_key.pem}
+      # CORS 配置
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      # 日志配置
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DEBUG: ${DEBUG:-false}
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    volumes:
+      # 持久化 RSA 密钥
+      - ./keys:/app/keys
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8080}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
