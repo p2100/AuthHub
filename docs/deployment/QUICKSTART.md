@@ -131,15 +131,24 @@ docker-compose -f docker-compose-production.yml logs -f
 curl http://localhost:8080/health
 ```
 
-#### 5️⃣ 配置 Nginx
+#### 5️⃣ 配置 Nginx 和 SSL
+
+##### 选项 A: 使用 Cloudflare（推荐，最简单）
+
+1. 添加域名到 [Cloudflare](https://www.cloudflare.com/)（免费）
+2. 配置 DNS，开启代理（橙色云朵）
+3. 选择 SSL 模式：**灵活** 或 **完全（严格）**
+
+Nginx 配置（灵活模式，无需证书）:
 
 ```nginx
 server {
-    listen 443 ssl http2;
+    listen 80;
     server_name your-domain.com;
     
-    ssl_certificate /etc/nginx/ssl/cert.pem;
-    ssl_certificate_key /etc/nginx/ssl/key.pem;
+    # 获取真实 IP
+    real_ip_header CF-Connecting-IP;
+    set_real_ip_from 0.0.0.0/0;
     
     location / {
         proxy_pass http://localhost:8080;
@@ -150,6 +159,20 @@ server {
     }
 }
 ```
+
+✅ **完成！** 访问 `https://your-domain.com` 即可，Cloudflare 自动提供 SSL！
+
+##### 选项 B: 使用 Let's Encrypt
+
+```bash
+# 安装 Certbot
+sudo apt install certbot python3-certbot-nginx
+
+# 自动配置
+sudo certbot --nginx -d your-domain.com
+```
+
+📖 **详细 SSL 配置**: [SSL 证书配置指南](./ssl-certificate-guide.md)
 
 #### 6️⃣ 配置飞书回调
 

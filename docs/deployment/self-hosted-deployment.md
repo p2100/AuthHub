@@ -895,7 +895,20 @@ docker-compose -f docker-compose-production.yml up -d
 
 ### 4. SSL 证书
 
-推荐使用 Let's Encrypt 免费证书:
+#### 方式 A: Cloudflare（推荐，最简单）
+
+使用 Cloudflare 提供的**免费 SSL 证书**：
+
+1. 注册 [Cloudflare](https://www.cloudflare.com/) 账号（免费）
+2. 添加你的域名到 Cloudflare
+3. 配置 DNS A 记录指向你的服务器 IP，开启"代理状态"（橙色云朵）
+4. **SSL/TLS** → **概述** → 选择 **灵活** 或 **完全（严格）** 模式
+
+✅ **零配置即可使用 HTTPS**，Cloudflare 自动处理 SSL！
+
+详细教程: [SSL 证书配置指南](./ssl-certificate-guide.md)
+
+#### 方式 B: Let's Encrypt（免费证书）
 
 ```bash
 # 安装 certbot
@@ -907,6 +920,8 @@ sudo certbot --nginx -d your-domain.com
 # 自动续期
 sudo certbot renew --dry-run
 ```
+
+详细教程: [SSL 证书配置指南](./ssl-certificate-guide.md)
 
 ### 5. 备份密钥
 

@@ -21,6 +21,18 @@
   - 监控和维护
   - 性能优化建议
 
+- **[SSL 证书配置指南](./ssl-certificate-guide.md)** ⭐️ 推荐
+  - Cloudflare 免费 SSL（最简单）
+  - Cloudflare Origin CA 证书
+  - Let's Encrypt 自动续期
+  - 自签名证书（测试用）
+
+- **[Cloudflare + Nginx 故障排查](./cloudflare-nginx-troubleshooting.md)** 🔧
+  - 重定向循环问题解决
+  - upstream 错误修复
+  - 完整配置模板
+  - 诊断命令大全
+
 - **[Cloud Run 部署指南](../deployment-cloudrun.md)**
   - Google Cloud Run 部署
   - 云数据库配置
