@@ -23,6 +23,7 @@ class JWTHandler:
     def create_access_token(
         self,
         user_id: int,
+        feishu_user_id: str,
         username: str,
         email: str,
         global_roles: list,
@@ -38,6 +39,7 @@ class JWTHandler:
 
         Args:
             user_id: 用户ID
+            feishu_user_id: 飞书用户ID
             username: 用户名
             email: 邮箱
             global_roles: 全局角色列表
@@ -59,6 +61,7 @@ class JWTHandler:
         payload = {
             "sub": str(user_id),
             "user_type": "user",
+            "feishu_user_id": feishu_user_id,
             "username": username,
             "email": email,
             "dept_ids": dept_ids or [],
@@ -165,7 +168,7 @@ class JWTHandler:
         redis_client.setex(
             f"refresh_token:{token}",
             7 * 24 * 3600,  # 7天
-            str(user_id)
+            str(user_id),
         )
         return token
 
