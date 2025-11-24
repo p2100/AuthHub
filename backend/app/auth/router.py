@@ -3,6 +3,7 @@
 import secrets
 from typing import Optional
 
+from backend.app.auth import feishu
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -115,6 +116,7 @@ async def feishu_callback(
         logger.info("[登录回调] 步骤5: 生成JWT Token")
         token = jwt_handler.create_access_token(
             user_id=user.id,
+            feishu_user_id=user.feishu_user_id,
             username=user.username,
             email=user.email or "",
             global_roles=user_permissions.get("global_roles", []),

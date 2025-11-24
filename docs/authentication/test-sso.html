@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuthHub SSO 测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="url"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="url"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .step-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .user-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .user-info h3 {
+            margin-bottom: 10px;
+        }
+
+        .user-info-item {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .user-info-item:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        .badge-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .copy-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #138496;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🔐 AuthHub SSO 测试页面</h1>
+            <p>完整的 SSO 登录流程演示</p>
+        </div>
+
+        <!-- 配置区域 -->
+        <div class="card">
+            <h2>⚙️ 配置</h2>
+            <div class="config-section">
+                <div class="form-group">
+                    <label for="authhub-url">AuthHub 后端地址:</label>
+                    <input type="url" id="authhub-url" value="http://localhost:8000"
+                        placeholder="http://localhost:8000">
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        💡 如果后端有 API 前缀，请包含在 URL 中（如：http://localhost:8000/api/v1）
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="callback-url">回调地址 (当前页面):</label>
+                    <input type="url" id="callback-url" readonly>
+                </div>
+            </div>
+            <div class="status status-info">
+                <strong>💡 提示:</strong> 请确保 AuthHub 后端服务已启动，并且飞书应用已配置回调地址为上述 URL
+            </div>
+        </div>
+
+        <!-- 登录状态 -->
+        <div class="card" id="login-status-card">
+            <h2>📊 登录状态</h2>
+            <div id="not-logged-in" class="status status-warning">
+                <strong>⚠️ 未登录</strong><br>
+                请按照下方步骤完成 SSO 登录流程
+            </div>
+            <div id="logged-in" class="hidden">
+                <div class="user-info">
+                    <h3>✅ 登录成功</h3>
+                    <div class="user-info-item">用户ID: <strong id="user-id"></strong></div>
+                    <div class="user-info-item">用户名: <strong id="username"></strong></div>
+                    <div class="user-info-item">邮箱: <strong id="email"></strong></div>
+                    <div class="user-info-item">
+                        全局角色: <span id="global-roles"></span>
+                    </div>
+                    <div class="user-info-item">
+                        系统角色: <span id="system-roles"></span>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-danger" onclick="logout()">🚪 登出</button>
+                    <button class="btn btn-secondary" onclick="testRefreshToken()">🔄 测试刷新 Token</button>
+                    <button class="btn btn-secondary" onclick="viewTokens()">👁️ 查看 Token</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SSO 流程步骤 -->
+        <div class="card">
+            <h2>🚀 SSO 登录流程</h2>
+
+            <!-- 步骤1 -->
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <div class="step-title">获取 SSO 登录 URL</div>
+                    <div class="step-description">调用 AuthHub API 生成飞书登录链接</div>
+                    <button class="btn btn-primary" onclick="getLoginUrl()">
+                        获取登录 URL
+                    </button>
+                    <div id="step1-result" class="hidden">
+                        <div class="status status-success">
+                            <strong>✅ 登录 URL 获取成功</strong>
+                            <div style="margin-top: 10px;">
+                                State: <code id="sso-state"></code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 步骤2 -->
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <div class="step-title">跳转到飞书登录</div>
+                    <div class="step-description">在新窗口打开飞书登录页面，完成授权后会自动返回</div>
+                    <button class="btn btn-success" id="open-login-btn" onclick="openLoginPage()" disabled>
+                        打开飞书登录页
+                    </button>
+                </div>
+            </div>
+
+            <!-- 步骤3 -->
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <div class="step-title">处理回调 & 交换 Token</div>
+                    <div class="step-description">飞书登录成功后会自动处理回调，用授权码交换 JWT Token</div>
+                    <div id="step3-processing" class="hidden">
+                        <div class="status status-info">
+                            <div class="loading"></div> 正在处理回调...
+                        </div>
+                    </div>
+                    <div id="step3-result" class="hidden"></div>
+                </div>
+            </div>
+
+            <!-- 步骤4 -->
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <div class="step-title">获取用户信息</div>
+                    <div class="step-description">使用 Access Token 获取当前用户的详细信息</div>
+                    <button class="btn btn-secondary" id="get-user-info-btn" onclick="getUserInfo()" disabled>
+                        获取用户信息
+                    </button>
+                    <div id="step4-result" class="hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API 测试区域 -->
+        <div class="card">
+            <h2>🧪 API 测试</h2>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="testGetPublicKey()">🔑 获取公钥</button>
+                <button class="btn btn-secondary" onclick="testParseToken()">🔍 解析 Token</button>
+                <button class="btn btn-secondary" onclick="clearLocalStorage()">🗑️ 清除本地存储</button>
+            </div>
+        </div>
+
+        <!-- 调试信息 -->
+        <div class="card">
+            <h2>🐛 调试信息</h2>
+            <div id="debug-info" class="code-block">等待操作...</div>
+            <button class="copy-btn" onclick="copyDebugInfo()">📋 复制调试信息</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 配置 ====================
+        const config = {
+            getAuthhubUrl: () => document.getElementById('authhub-url').value.replace(/\/$/, ''),
+            getCallbackUrl: () => window.location.origin + window.location.pathname,
+        };
+
+        // ==================== 初始化 ====================
+        window.onload = function () {
+            // 设置回调 URL
+            document.getElementById('callback-url').value = config.getCallbackUrl();
+
+            // 检查 URL 参数，看是否是回调
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+
+            if (code && state) {
+                log('检测到回调参数', { code: code.substring(0, 10) + '...', state: state.substring(0, 10) + '...' });
+                handleCallback(code, state);
+            } else {
+                // 检查是否已登录
+                checkLoginStatus();
+            }
+        };
+
+        // ==================== 核心功能 ====================
+
+        // 1. 获取登录 URL
+        async function getLoginUrl() {
+            const authhubUrl = config.getAuthhubUrl();
+            const callbackUrl = config.getCallbackUrl();
+
+            log('步骤1: 获取登录 URL', { authhubUrl, callbackUrl });
+
+            try {
+                const response = await fetch(`${authhubUrl}/auth/sso/login-url`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        redirect_uri: callbackUrl
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const data = await response.json();
+                log('✅ 登录 URL 获取成功', data);
+
+                // 保存 state 和 login_url
+                localStorage.setItem('sso_state', data.state);
+                localStorage.setItem('login_url', data.login_url);
+
+                // 显示结果
+                document.getElementById('sso-state').textContent = data.state;
+                document.getElementById('step1-result').classList.remove('hidden');
+                document.getElementById('open-login-btn').disabled = false;
+
+            } catch (error) {
+                log('❌ 获取登录 URL 失败', { error: error.message });
+                alert('获取登录 URL 失败: ' + error.message);
+            }
+        }
+
+        // 2. 打开登录页面
+        function openLoginPage() {
+            const loginUrl = localStorage.getItem('login_url');
+            if (!loginUrl) {
+                alert('请先获取登录 URL');
+                return;
+            }
+
+            log('步骤2: 打开飞书登录页', { loginUrl });
+
+            // 在当前页面跳转（这样回调后可以直接处理）
+            window.location.href = loginUrl;
+        }
+
+        // 3. 处理回调
+        async function handleCallback(code, state) {
+            const authhubUrl = config.getAuthhubUrl();
+
+            document.getElementById('step3-processing').classList.remove('hidden');
+            log('步骤3: 处理回调', { code: code.substring(0, 10) + '...', state: state.substring(0, 10) + '...' });
+
+            try {
+                // 交换 Token
+                const response = await fetch(`${authhubUrl}/auth/sso/exchange-token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        state: state
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                log('✅ Token 交换成功', {
+                    access_token: data.access_token.substring(0, 50) + '...',
+                    refresh_token: data.refresh_token.substring(0, 30) + '...',
+                    expires_in: data.expires_in
+                });
+
+                // 保存 Token
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+
+                // 显示成功信息
+                document.getElementById('step3-processing').classList.add('hidden');
+                document.getElementById('step3-result').innerHTML = `
+                    <div class="status status-success">
+                        <strong>✅ Token 交换成功</strong><br>
+                        Access Token 有效期: ${data.expires_in} 秒 (${data.expires_in / 60} 分钟)<br>
+                        Refresh Token 有效期: ${data.refresh_expires_in} 秒 (${data.refresh_expires_in / 86400} 天)
+                    </div>
+                `;
+                document.getElementById('step3-result').classList.remove('hidden');
+                document.getElementById('get-user-info-btn').disabled = false;
+
+                // 清除 URL 参数（避免刷新重复处理）
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                // 自动获取用户信息
+                setTimeout(() => getUserInfo(), 500);
+
+            } catch (error) {
+                log('❌ Token 交换失败', { error: error.message });
+                document.getElementById('step3-processing').classList.add('hidden');
+                document.getElementById('step3-result').innerHTML = `
+                    <div class="status status-error">
+                        <strong>❌ Token 交换失败</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+                document.getElementById('step3-result').classList.remove('hidden');
+            }
+        }
+
+        // 4. 获取用户信息
+        async function getUserInfo() {
+            const authhubUrl = config.getAuthhubUrl();
+            const accessToken = localStorage.getItem('access_token');
+
+            if (!accessToken) {
+                alert('请先登录');
+                return;
+            }
+
+            log('步骤4: 获取用户信息');
+
+            try {
+                const response = await fetch(`${authhubUrl}/auth/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const userInfo = await response.json();
+                log('✅ 用户信息获取成功', userInfo);
+
+                // 保存用户信息
+                localStorage.setItem('user_info', JSON.stringify(userInfo));
+
+                // 显示用户信息
+                displayUserInfo(userInfo);
+
+                // 显示成功信息
+                document.getElementById('step4-result').innerHTML = `
+                    <div class="status status-success">
+                        <strong>✅ 用户信息获取成功</strong>
+                    </div>
+                `;
+                document.getElementById('step4-result').classList.remove('hidden');
+
+            } catch (error) {
+                log('❌ 获取用户信息失败', { error: error.message });
+                document.getElementById('step4-result').innerHTML = `
+                    <div class="status status-error">
+                        <strong>❌ 获取用户信息失败</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+                document.getElementById('step4-result').classList.remove('hidden');
+            }
+        }
+
+        // 显示用户信息
+        function displayUserInfo(userInfo) {
+            document.getElementById('not-logged-in').classList.add('hidden');
+            document.getElementById('logged-in').classList.remove('hidden');
+
+            document.getElementById('user-id').textContent = userInfo.sub;
+            document.getElementById('username').textContent = userInfo.username;
+            document.getElementById('email').textContent = userInfo.email || '未设置';
+
+            // 全局角色
+            const globalRolesContainer = document.getElementById('global-roles');
+            globalRolesContainer.innerHTML = '';
+            (userInfo.global_roles || []).forEach(role => {
+                const badge = document.createElement('span');
+                badge.className = 'badge badge-primary';
+                badge.textContent = role;
+                globalRolesContainer.appendChild(badge);
+            });
+
+            // 系统角色
+            const systemRolesContainer = document.getElementById('system-roles');
+            systemRolesContainer.innerHTML = '';
+            Object.entries(userInfo.system_roles || {}).forEach(([system, roles]) => {
+                roles.forEach(role => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge badge-success';
+                    badge.textContent = `${system}: ${role}`;
+                    systemRolesContainer.appendChild(badge);
+                });
+            });
+        }
+
+        // 检查登录状态
+        function checkLoginStatus() {
+            const accessToken = localStorage.getItem('access_token');
+            const userInfo = localStorage.getItem('user_info');
+
+            if (accessToken && userInfo) {
+                displayUserInfo(JSON.parse(userInfo));
+                document.getElementById('get-user-info-btn').disabled = false;
+                log('检测到已登录状态');
+            }
+        }
+
+        // 刷新 Token
+        async function testRefreshToken() {
+            const authhubUrl = config.getAuthhubUrl();
+            const refreshToken = localStorage.getItem('refresh_token');
+
+            if (!refreshToken) {
+                alert('没有 Refresh Token');
+                return;
+            }
+
+            log('测试刷新 Token');
+
+            try {
+                const response = await fetch(`${authhubUrl}/auth/refresh`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        refresh_token: refreshToken
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const data = await response.json();
+                log('✅ Token 刷新成功', {
+                    access_token: data.access_token.substring(0, 50) + '...',
+                    refresh_token: data.refresh_token.substring(0, 30) + '...'
+                });
+
+                // 更新 Token
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+
+                alert('✅ Token 刷新成功！新的 Token 已保存。');
+
+            } catch (error) {
+                log('❌ Token 刷新失败', { error: error.message });
+                alert('❌ Token 刷新失败: ' + error.message);
+            }
+        }
+
+        // 登出
+        async function logout() {
+            const authhubUrl = config.getAuthhubUrl();
+            const accessToken = localStorage.getItem('access_token');
+            const refreshToken = localStorage.getItem('refresh_token');
+
+            if (!accessToken) {
+                alert('未登录');
+                return;
+            }
+
+            log('登出');
+
+            try {
+                const response = await fetch(`${authhubUrl}/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        refresh_token: refreshToken
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                log('✅ 登出成功');
+
+                // 清除本地存储
+                localStorage.clear();
+
+                // 刷新页面
+                window.location.reload();
+
+            } catch (error) {
+                log('❌ 登出失败', { error: error.message });
+                alert('❌ 登出失败: ' + error.message);
+            }
+        }
+
+        // ==================== 辅助功能 ====================
+
+        // 查看 Token
+        function viewTokens() {
+            const accessToken = localStorage.getItem('access_token');
+            const refreshToken = localStorage.getItem('refresh_token');
+
+            if (!accessToken) {
+                alert('没有 Token');
+                return;
+            }
+
+            const tokenInfo = {
+                access_token: accessToken,
+                refresh_token: refreshToken,
+                access_token_length: accessToken.length,
+                refresh_token_length: refreshToken.length
+            };
+
+            log('查看 Token', tokenInfo);
+            alert('Token 信息已输出到调试区域');
+        }
+
+        // 获取公钥
+        async function testGetPublicKey() {
+            const authhubUrl = config.getAuthhubUrl();
+
+            log('获取 JWT 公钥');
+
+            try {
+                const response = await fetch(`${authhubUrl}/auth/public-key`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const data = await response.json();
+                log('✅ 公钥获取成功', data);
+                alert('✅ 公钥已输出到调试区域');
+
+            } catch (error) {
+                log('❌ 获取公钥失败', { error: error.message });
+                alert('❌ 获取公钥失败: ' + error.message);
+            }
+        }
+
+        // 解析 Token
+        function testParseToken() {
+            const accessToken = localStorage.getItem('access_token');
+
+            if (!accessToken) {
+                alert('没有 Access Token');
+                return;
+            }
+
+            try {
+                // JWT 格式: header.payload.signature
+                const parts = accessToken.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Token 格式错误');
+                }
+
+                // 解析 header
+                const header = JSON.parse(atob(parts[0]));
+
+                // 解析 payload
+                const payload = JSON.parse(atob(parts[1]));
+
+                const tokenInfo = {
+                    header,
+                    payload,
+                    signature: parts[2].substring(0, 20) + '...'
+                };
+
+                log('✅ Token 解析成功', tokenInfo);
+                alert('✅ Token 已解析，详情见调试区域');
+
+            } catch (error) {
+                log('❌ Token 解析失败', { error: error.message });
+                alert('❌ Token 解析失败: ' + error.message);
+            }
+        }
+
+        // 清除本地存储
+        function clearLocalStorage() {
+            if (confirm('确定要清除所有本地存储吗？')) {
+                localStorage.clear();
+                log('🗑️ 本地存储已清除');
+                window.location.reload();
+            }
+        }
+
+        // 复制调试信息
+        function copyDebugInfo() {
+            const debugInfo = document.getElementById('debug-info').textContent;
+            navigator.clipboard.writeText(debugInfo).then(() => {
+                alert('✅ 调试信息已复制到剪贴板');
+            }).catch(() => {
+                alert('❌ 复制失败');
+            });
+        }
+
+        // ==================== 日志功能 ====================
+        const debugLogs = [];
+
+        function log(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            const logEntry = {
+                timestamp,
+                message,
+                data
+            };
+
+            debugLogs.push(logEntry);
+            console.log(`[${timestamp}] ${message}`, data || '');
+
+            // 更新调试信息显示
+            updateDebugDisplay();
+        }
+
+        function updateDebugDisplay() {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.textContent = debugLogs.map(log => {
+                let output = `[${log.timestamp}] ${log.message}`;
+                if (log.data) {
+                    output += '\n' + JSON.stringify(log.data, null, 2);
+                }
+                return output;
+            }).join('\n\n---\n\n');
+
+            // 自动滚动到底部
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>
