@@ -31,7 +31,7 @@ services:
       - "${PORT:-8080}:${PORT:-8080}"
     volumes:
       # 持久化 RSA 密钥
-      - ./keys:/app/keys
+      - ./backend/keys:/app/keys
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8080}/health"]
       interval: 30s
