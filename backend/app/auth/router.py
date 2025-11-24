@@ -3,7 +3,6 @@
 import secrets
 from typing import Optional
 
-from backend.app.auth import feishu
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
