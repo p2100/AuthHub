@@ -6,19 +6,46 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import require_admin, require_admin_or_system
+from app.core.dependencies import get_current_user, require_admin, require_admin_or_system
 from app.schemas.user import (
     UserDetailResponse,
     UserListResponse,
     UserPermissionDetail,
     UserResponse,
     UserRoleResponse,
+    UserSimpleListResponse,
+    UserSimpleResponse,
     UserStatusUpdate,
 )
 from app.users.permission_collector import PermissionCollector
 from app.users.service import UserService
 
 router = APIRouter(prefix="/users", tags=["用户管理"])
+
+
+@router.get("/simple", response_model=UserSimpleListResponse)
+async def list_users_simple(
+    skip: int = Query(0, ge=0, description="跳过数量"),
+    limit: int = Query(100, ge=1, le=1000, description="每页数量"),
+    search: Optional[str] = Query(None, description="搜索关键词"),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    获取用户简单列表（仅ID和用户名）
+
+    只需要有效的Token（用户或系统Token均可）
+    """
+    user_service = UserService(db)
+    users, total = await user_service.list_users_simple(skip=skip, limit=limit, search=search)
+
+    # 将结果转换为响应格式
+    items = [
+        UserSimpleResponse(feishu_user_id=user.feishu_user_id, username=user.username)
+        for user in users
+    ]
+
+    return UserSimpleListResponse(total=total, items=items)
 
 
 @router.get("", response_model=UserListResponse)
