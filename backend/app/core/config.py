@@ -4,6 +4,7 @@ from typing import List
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from uvicorn.main import logger
 
 
 class Settings(BaseSettings):
@@ -41,7 +42,6 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://172.18.188.6:8001",
     ]
-
     # 日志配置
     LOG_LEVEL: str = "INFO"
 
@@ -54,3 +54,4 @@ class Settings(BaseSettings):
 
 # 全局配置实例
 settings = Settings()
+logger.info(f"CORS_ORIGINS: {settings.CORS_ORIGINS}")
