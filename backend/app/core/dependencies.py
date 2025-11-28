@@ -66,6 +66,72 @@ async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     return current_user
 
 
+async def require_admin_or_system(
+    authorization: str = Header(..., description="Bearer token"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    要求管理员权限或系统Token
+
+    允许以下两种情况访问：
+    1. 管理员用户（user_type=user 且 global_roles 包含 admin）
+    2. 已注册的系统（user_type=system）
+
+    Returns:
+        Token payload，包含调用者信息
+    """
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="无效的认证头")
+
+    token = authorization.replace("Bearer ", "")
+
+    try:
+        # 读取公钥
+        with open(settings.JWT_PUBLIC_KEY_PATH, "r") as f:
+            public_key = f.read()
+
+        # 验证Token
+        payload = jwt.decode(token, public_key, algorithms=[settings.JWT_ALGORITHM])
+
+        # 检查黑名单
+        jti = payload.get("jti", "")
+        if redis_client.exists(f"blacklist:{jti}"):
+            raise HTTPException(status_code=401, detail="Token已被撤销")
+
+        # 获取用户类型
+        user_type = payload.get("user_type")
+
+        # 情况1: 系统Token
+        if user_type == "system":
+            # 验证系统是否存在
+            system_code = payload.get("sub")
+            if not system_code:
+                raise HTTPException(status_code=401, detail="Token中缺少系统标识")
+
+            # 这里可以选择是否检查系统是否在数据库中存在
+            # 为了性能考虑，我们信任已签发的系统Token
+            return payload
+
+        # 情况2: 用户Token - 检查是否为管理员
+        elif user_type == "user":
+            global_roles = payload.get("global_roles", [])
+            if "admin" not in global_roles:
+                raise HTTPException(status_code=403, detail="需要管理员权限或系统Token")
+            return payload
+
+        else:
+            raise HTTPException(status_code=401, detail="无效的Token类型")
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token已过期")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token无效")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Token验证失败: {str(e)}")
+
+
 def verify_system_token(token: str, db: AsyncSession) -> dict:
     """
     验证系统Token

@@ -1,20 +1,22 @@
 """用户管理API路由"""
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from typing import Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_admin, require_admin_or_system
 from app.schemas.user import (
-    UserResponse,
-    UserListResponse,
     UserDetailResponse,
-    UserStatusUpdate,
-    UserRoleResponse,
+    UserListResponse,
     UserPermissionDetail,
+    UserResponse,
+    UserRoleResponse,
+    UserStatusUpdate,
 )
-from app.users.service import UserService
 from app.users.permission_collector import PermissionCollector
+from app.users.service import UserService
 
 router = APIRouter(prefix="/users", tags=["用户管理"])
 
@@ -26,19 +28,19 @@ async def list_users(
     search: Optional[str] = Query(None, description="搜索关键词"),
     dept_id: Optional[str] = Query(None, description="部门ID筛选"),
     status: Optional[str] = Query(None, description="状态筛选"),
-    current_user: dict = Depends(require_admin),
+    current_user: dict = Depends(require_admin_or_system),
     db: AsyncSession = Depends(get_db),
 ):
     """
     获取用户列表
-    
-    需要管理员权限
+
+    需要管理员权限或系统Token
     """
     user_service = UserService(db)
     users, total = await user_service.list_users(
         skip=skip, limit=limit, search=search, dept_id=dept_id, status=status
     )
-    
+
     return UserListResponse(total=total, items=users)
 
 
@@ -50,15 +52,15 @@ async def get_user(
 ):
     """
     获取用户详情
-    
+
     需要管理员权限
     """
     user_service = UserService(db)
     user = await user_service.get_user_by_id(user_id)
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
-    
+
     return user
 
 
@@ -71,19 +73,19 @@ async def update_user_status(
 ):
     """
     更新用户状态
-    
+
     需要管理员权限
     """
     # 验证状态值
     if status_update.status not in ["active", "inactive"]:
         raise HTTPException(status_code=400, detail="无效的状态值")
-    
+
     user_service = UserService(db)
     user = await user_service.update_user_status(user_id, status_update.status)
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
-    
+
     return user
 
 
@@ -95,19 +97,19 @@ async def get_user_roles(
 ):
     """
     获取用户的角色列表
-    
+
     需要管理员权限
     """
     user_service = UserService(db)
-    
+
     # 检查用户是否存在
     user = await user_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
-    
+
     # 获取用户角色
     user_roles = await user_service.get_user_roles(user_id)
-    
+
     # 转换为响应格式
     result = []
     for ur in user_roles:
@@ -121,7 +123,7 @@ async def get_user_roles(
                 created_by=ur.created_by,
             )
         )
-    
+
     return result
 
 
@@ -133,20 +135,20 @@ async def get_user_permissions(
 ):
     """
     获取用户的权限详情
-    
+
     需要管理员权限
     """
     user_service = UserService(db)
-    
+
     # 检查用户是否存在
     user = await user_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
-    
+
     # 收集用户权限
     permission_collector = PermissionCollector(db)
     permissions = await permission_collector.collect(user_id)
-    
+
     # 获取角色详情
     user_roles = await user_service.get_user_roles(user_id)
     roles_detail = []
@@ -161,7 +163,7 @@ async def get_user_permissions(
                 created_by=ur.created_by,
             )
         )
-    
+
     return UserPermissionDetail(
         global_roles=permissions.get("global_roles", []),
         system_roles=permissions.get("system_roles", {}),
@@ -169,4 +171,3 @@ async def get_user_permissions(
         system_resources=permissions.get("system_resources", {}),
         roles=roles_detail,
     )
-

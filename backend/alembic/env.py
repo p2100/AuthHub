@@ -1,26 +1,28 @@
 """Alembic环境配置"""
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from alembic import context
+
 import os
 import sys
+from logging.config import fileConfig
+
+from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 # 添加项目路径到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # 导入配置和模型
+from app import models  # 导入所有模型
 from app.core.config import settings
 from app.core.database import Base
-from app import models  # 导入所有模型
 
 # this is the Alembic Config object
 config = context.config
 
 # 从环境变量读取数据库URL
 # Alembic 需要使用同步驱动，所以将 asyncpg 转换为 psycopg2
-sync_database_url = settings.DATABASE_URL.replace('postgresql+asyncpg://', 'postgresql://')
-config.set_main_option('sqlalchemy.url', sync_database_url)
+sync_database_url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+config.set_main_option("sqlalchemy.url", sync_database_url)
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
@@ -54,7 +56,7 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
+            connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
         )
@@ -67,4 +69,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-
