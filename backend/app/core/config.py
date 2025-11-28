@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file="../.env",  # 从项目根目录加载
         env_file_encoding="utf-8",
         case_sensitive=True,
     )

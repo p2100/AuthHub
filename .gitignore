@@ -48,4 +48,4 @@ Thumbs.db
 chat/
 
 data/
-.env.pro
+.env*

@@ -10,6 +10,24 @@
 
 ## 配置说明
 
+### 环境变量加载
+
+Alembic 会从项目根目录的 `.env` 文件自动加载配置：
+
+```python
+# alembic/env.py
+from app.core.config import settings
+
+# 从环境变量读取数据库URL
+# Alembic 需要使用同步驱动，所以将 asyncpg 转换为 psycopg2
+sync_database_url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+config.set_main_option("sqlalchemy.url", sync_database_url)
+```
+
+**重要**：所有数据库迁移操作必须在项目根目录执行，以确保正确加载配置文件。
+
+### 异步与同步驱动的转换
+
 本项目使用异步 SQLAlchemy，但 Alembic 本身需要同步连接。系统会自动处理 URL 转换：
 
 - 应用使用: `postgresql+asyncpg://...` （异步）
@@ -17,18 +35,23 @@
 
 该转换在 `alembic/env.py` 中自动完成，无需手动配置。
 
+
 ## 常用命令
 
 ### 1. 生成迁移文件
 
 当模型发生变更后，使用以下命令生成迁移文件：
 
+**确保在项目根目录执行：**
+
 ```bash
+cd /path/to/AuthHub
 uv run alembic revision --autogenerate -m "描述变更内容"
 ```
 
 例如：
 ```bash
+cd /path/to/AuthHub
 uv run alembic revision --autogenerate -m "Add user email column"
 ```
 
@@ -41,7 +64,10 @@ uv run alembic revision --autogenerate -m "Add user email column"
 
 将数据库升级到最新版本：
 
+**在项目根目录执行：**
+
 ```bash
+cd /path/to/AuthHub
 uv run alembic upgrade head
 ```
 

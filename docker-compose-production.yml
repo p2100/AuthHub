@@ -9,7 +9,7 @@ services:
     container_name: authhub-backend
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.production
     environment:
       # 使用外部数据库，通过环境变量配置
       DATABASE_URL: ${DATABASE_URL}

@@ -102,7 +102,7 @@ sudo systemctl restart redis
 
 ### 3. 配置环境变量
 
-创建 `.env` 文件（在项目根目录）：
+创建 `.env.production` 文件（在项目根目录）：
 
 ```bash
 # ==================== 应用配置 ====================
@@ -114,7 +114,7 @@ PORT=8080
 # ==================== 外部数据库配置 ====================
 # PostgreSQL 连接 URL（使用外部数据库的实际地址）
 # ⚠️ 不能使用 localhost，要使用服务器的实际 IP 或域名
-DATABASE_URL=postgresql://authhub:your_strong_password@192.168.1.100:5432/authhub
+DATABASE_URL=postgresql+asyncpg://authhub:your_strong_password@192.168.1.100:5432/authhub
 
 # ==================== 外部 Redis 配置 ====================
 # Redis 连接 URL（使用外部 Redis 的实际地址）
@@ -132,16 +132,19 @@ JWT_PUBLIC_KEY_PATH=/app/keys/public_key.pem
 # ==================== 飞书配置 ====================
 FEISHU_APP_ID=your_feishu_app_id
 FEISHU_APP_SECRET=your_feishu_app_secret
-FEISHU_ENCRYPT_KEY=
-FEISHU_VERIFICATION_TOKEN=
 
 # ==================== CORS配置 ====================
 # 生产环境请修改为实际域名
-CORS_ORIGINS=["https://your-domain.com", "http://localhost:3000"]
+CORS_ORIGINS=["https://your-domain.com"]
 
 # ==================== 日志配置 ====================
 LOG_LEVEL=INFO
 ```
+
+**配置文件说明**：
+- 开发环境：使用项目根目录的 `.env` 文件（默认）
+- 生产环境：使用项目根目录的 `.env.production` 文件
+- 所有环境相关的操作都在项目根目录执行
 
 > **网络连接提示**:
 > - 如果数据库在同一服务器: 使用服务器的内网 IP（如 `192.168.1.100`）或 `host.docker.internal`（Mac/Windows）
@@ -481,7 +484,7 @@ cd ..
 
 ### 4. 配置环境变量
 
-创建 `backend/.env`:
+创建 `.env` 文件（在项目根目录）：
 
 ```bash
 # 应用配置
@@ -491,7 +494,7 @@ HOST=0.0.0.0
 PORT=8000
 
 # 数据库配置
-DATABASE_URL=postgresql://authhub:your_password@localhost:5432/authhub
+DATABASE_URL=postgresql+asyncpg://authhub:your_password@localhost:5432/authhub
 
 # Redis配置
 REDIS_URL=redis://:your_redis_password@localhost:6379/0
@@ -513,6 +516,12 @@ CORS_ORIGINS=["https://your-domain.com"]
 # 日志配置
 LOG_LEVEL=INFO
 ```
+
+**配置说明**：
+- 所有环境相关的操作都在项目根目录执行
+- 后端服务会自动加载项目根目录的 `.env` 文件
+- 数据库迁移也会使用相同的配置文件，确保环境一致性
+
 
 ### 5. 初始化数据库和密钥
 

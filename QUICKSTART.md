@@ -12,27 +12,35 @@
 ### 1. 后端启动
 
 ```bash
-cd backend
-
-# 安装UV (Python包管理器)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 安装依赖
-uv pip install -e .
-
-# 配置环境变量
+# 在项目根目录配置环境变量
 cp .env.example .env
 # 编辑.env文件,填写数据库和Redis连接信息
 
 # 生成RSA密钥对
+cd backend
 python scripts/generate_keys.py
+cd ..
+
+# 启动后端服务（使用Docker）
+docker compose up backend
+
+# 或者直接在本地运行
+cd backend
+# 安装UV (Python包管理器)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 安装依赖
+uv sync
 
 # 初始化数据库
-alembic upgrade head
+uv run alembic upgrade head
 
 # 启动服务
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+**注意**：环境变量文件位于项目根目录（`.env`），所有后端服务（无论Docker还是本地运行）都会自动加载此文件。
+
 
 访问 API文档: http://localhost:8000/docs
 

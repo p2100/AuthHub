@@ -4,6 +4,7 @@ import os
 import sys
 from logging.config import fileConfig
 
+from loguru import logger
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
@@ -22,6 +23,7 @@ config = context.config
 # 从环境变量读取数据库URL
 # Alembic 需要使用同步驱动，所以将 asyncpg 转换为 psycopg2
 sync_database_url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+logger.info(f"sync_database_url: {sync_database_url}")
 config.set_main_option("sqlalchemy.url", sync_database_url)
 
 # Interpret the config file for Python logging.
