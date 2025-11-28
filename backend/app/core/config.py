@@ -36,7 +36,11 @@ class Settings(BaseSettings):
     FEISHU_VERIFICATION_TOKEN: str = ""
 
     # CORS配置
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://172.18.188.6:8001",
+    ]
 
     # 日志配置
     LOG_LEVEL: str = "INFO"
