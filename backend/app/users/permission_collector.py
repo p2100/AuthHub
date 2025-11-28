@@ -16,12 +16,12 @@ class PermissionCollector:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def collect(self, user_id: int) -> Dict:
+    async def collect(self, user_id: str) -> Dict:
         """
         收集用户在所有系统中的权限
 
         Args:
-            user_id: 用户ID
+            user_id: 用户ID (Feishu User ID)
 
         Returns:
             权限字典:
@@ -35,7 +35,7 @@ class PermissionCollector:
         # 使用selectinload预加载关联数据
         result = await self.db.execute(
             select(User)
-            .filter(User.id == user_id)
+            .filter(User.feishu_user_id == user_id)
             .options(
                 selectinload(User.roles).selectinload(UserRole.role),
                 selectinload(User.resource_bindings),

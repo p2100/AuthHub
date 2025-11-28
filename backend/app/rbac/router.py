@@ -203,14 +203,14 @@ async def update_role_permissions(
 
 @router.post("/users/{user_id}/roles/{role_id}")
 async def assign_role_to_user(
-    user_id: int,
+    user_id: str,
     role_id: int,
     current_user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """为用户分配角色"""
     role_service = RoleService(db)
-    creator_id = int(current_user.get("sub", 0))
+    creator_id = current_user.get("sub")
 
     await role_service.assign_role_to_user(user_id, role_id, creator_id)
 
@@ -219,7 +219,7 @@ async def assign_role_to_user(
 
 @router.delete("/users/{user_id}/roles/{role_id}")
 async def remove_role_from_user(
-    user_id: int,
+    user_id: str,
     role_id: int,
     current_user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
@@ -406,7 +406,7 @@ async def list_route_patterns(
 
 @router.get("/resource-bindings")
 async def list_resource_bindings(
-    user_id: Optional[int] = Query(None, description="用户ID筛选"),
+    user_id: Optional[str] = Query(None, description="用户ID筛选"),
     system_id: Optional[int] = Query(None, description="系统ID筛选"),
     namespace: Optional[str] = Query(None, description="命名空间筛选"),
     current_user: dict = Depends(require_admin),
@@ -431,7 +431,7 @@ async def create_resource_bindings(
 ):
     """批量创建资源绑定"""
     binding_service = ResourceBindingService(db)
-    creator_id = int(current_user.get("sub", 0))
+    creator_id = current_user.get("sub")
 
     await binding_service.batch_create_bindings(
         user_id=binding_data.user_id,

@@ -45,7 +45,7 @@ class UserRoleResponse(BaseModel):
     role_name: str
     namespace: str
     assigned_at: datetime
-    created_by: Optional[int]
+    created_by: Optional[str]
     
     class Config:
         from_attributes = True

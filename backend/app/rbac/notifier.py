@@ -37,7 +37,7 @@ class PermissionNotifier:
             "timestamp": time.time()
         })
     
-    def notify_user_permissions_changed(self, user_id: int):
+    def notify_user_permissions_changed(self, user_id: str):
         """用户权限变更通知(影响所有系统)"""
         # 发布到全局channel
         self._publish("global", {

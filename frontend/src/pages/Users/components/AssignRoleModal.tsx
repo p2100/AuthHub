@@ -6,7 +6,7 @@ import type { Role } from '@/types/api'
 
 interface AssignRoleModalProps {
   visible: boolean
-  userId: number
+  userId: string
   username: string
   onClose: () => void
   onSuccess: () => void

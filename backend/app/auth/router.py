@@ -104,9 +104,9 @@ async def feishu_callback(
         )
 
         # 4. 收集用户完整权限
-        logger.info(f"[登录回调] 步骤4: 收集用户权限 - user_id: {user.id}")
+        logger.info(f"[登录回调] 步骤4: 收集用户权限 - feishu_user_id: {user.feishu_user_id}")
         permission_collector = PermissionCollector(db)
-        user_permissions = await permission_collector.collect(user.id)
+        user_permissions = await permission_collector.collect(user.feishu_user_id)
         logger.info(
             f"[登录回调] 步骤4完成 - 权限: global_roles={user_permissions.get('global_roles')}, system_roles数量={len(user_permissions.get('system_roles', {}))}"
         )
@@ -114,7 +114,6 @@ async def feishu_callback(
         # 5. 生成JWT Token
         logger.info("[登录回调] 步骤5: 生成JWT Token")
         token = jwt_handler.create_access_token(
-            user_id=user.id,
             feishu_user_id=user.feishu_user_id,
             username=user.username,
             email=user.email or "",
@@ -129,10 +128,10 @@ async def feishu_callback(
 
         # 6. 生成 Refresh Token
         logger.info("[登录回调] 步骤6: 生成 Refresh Token")
-        refresh_token = jwt_handler.create_refresh_token(user.id)
+        refresh_token = jwt_handler.create_refresh_token(user.feishu_user_id)
         logger.info(f"[登录回调] 步骤6完成 - refresh_token: {refresh_token[:30]}***")
 
-        logger.info(f"[登录回调] ✅ 登录成功 - 用户: {user.username} (ID: {user.id})")
+        logger.info(f"[登录回调] ✅ 登录成功 - 用户: {user.username} (ID: {user.feishu_user_id})")
         return TokenResponse(
             access_token=token,
             refresh_token=refresh_token,
@@ -223,30 +222,30 @@ async def refresh_access_token(request: RefreshTokenRequest, db: AsyncSession = 
     logger.info(f"[Token刷新] 开始刷新 - refresh_token: {request.refresh_token[:30]}***")
 
     # 1. 验证 refresh token
-    user_id = jwt_handler.verify_refresh_token(request.refresh_token)
-    if not user_id:
+    feishu_user_id = jwt_handler.verify_refresh_token(request.refresh_token)
+    if not feishu_user_id:
         logger.error("[Token刷新] ❌ Refresh token 无效或已过期")
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
-    logger.info(f"[Token刷新] Refresh token 验证通过 - user_id: {user_id}")
+    logger.info(f"[Token刷新] Refresh token 验证通过 - feishu_user_id: {feishu_user_id}")
 
     # 2. 获取用户信息
     from sqlalchemy import select
 
     from app.models.user import User
 
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = await db.execute(select(User).where(User.feishu_user_id == feishu_user_id))
     user = result.scalar_one_or_none()
 
     if not user:
-        logger.error(f"[Token刷新] ❌ 用户不存在 - user_id: {user_id}")
+        logger.error(f"[Token刷新] ❌ 用户不存在 - feishu_user_id: {feishu_user_id}")
         raise HTTPException(status_code=404, detail="User not found")
 
     logger.info(f"[Token刷新] 用户信息获取成功 - username: {user.username}")
 
     # 3. 收集权限
     permission_collector = PermissionCollector(db)
-    user_permissions = await permission_collector.collect(user.id)
+    user_permissions = await permission_collector.collect(user.feishu_user_id)
     logger.info(f"[Token刷新] 权限收集完成")
 
     # 4. 撤销旧的 refresh token (rotation)
@@ -255,7 +254,6 @@ async def refresh_access_token(request: RefreshTokenRequest, db: AsyncSession = 
 
     # 5. 生成新的 tokens
     access_token = jwt_handler.create_access_token(
-        user_id=user.id,
         feishu_user_id=user.feishu_user_id,
         username=user.username,
         email=user.email or "",
@@ -267,9 +265,9 @@ async def refresh_access_token(request: RefreshTokenRequest, db: AsyncSession = 
         dept_names=user.dept_names or [],
     )
 
-    new_refresh_token = jwt_handler.create_refresh_token(user.id)
+    new_refresh_token = jwt_handler.create_refresh_token(user.feishu_user_id)
 
-    logger.info(f"[Token刷新] ✅ Token 刷新成功 - 用户: {user.username} (ID: {user.id})")
+    logger.info(f"[Token刷新] ✅ Token 刷新成功 - 用户: {user.username} (ID: {user.feishu_user_id})")
 
     return TokenResponse(
         access_token=access_token,
@@ -364,14 +362,13 @@ async def exchange_sso_token(request: SSOExchangeTokenRequest, db: AsyncSession 
         user = await user_service.sync_user_from_feishu(user_info)
 
         # 4. 收集用户完整权限
-        logger.info(f"[SSO] 步骤4: 收集权限 - user_id: {user.id}")
+        logger.info(f"[SSO] 步骤4: 收集权限 - feishu_user_id: {user.feishu_user_id}")
         permission_collector = PermissionCollector(db)
-        user_permissions = await permission_collector.collect(user.id)
+        user_permissions = await permission_collector.collect(user.feishu_user_id)
 
         # 5. 生成 JWT Token
         logger.info("[SSO] 步骤5: 生成 JWT Token")
         token = jwt_handler.create_access_token(
-            user_id=user.id,
             feishu_user_id=user.feishu_user_id,
             username=user.username,
             email=user.email or "",
@@ -385,10 +382,10 @@ async def exchange_sso_token(request: SSOExchangeTokenRequest, db: AsyncSession 
 
         # 6. 生成 Refresh Token
         logger.info("[SSO] 步骤6: 生成 Refresh Token")
-        refresh_token = jwt_handler.create_refresh_token(user.id)
+        refresh_token = jwt_handler.create_refresh_token(user.feishu_user_id)
         logger.info(f"[SSO] 步骤6完成 - refresh_token: {refresh_token[:30]}***")
 
-        logger.info(f"[SSO] ✅ Token 交换成功 - 用户: {user.username} (ID: {user.id})")
+        logger.info(f"[SSO] ✅ Token 交换成功 - 用户: {user.username} (ID: {user.feishu_user_id})")
         return TokenResponse(
             access_token=token,
             refresh_token=refresh_token,

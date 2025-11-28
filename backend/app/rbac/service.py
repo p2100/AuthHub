@@ -97,7 +97,7 @@ class RoleService:
         """获取拥有该角色的用户列表"""
         result = await self.db.execute(
             select(User)
-            .join(UserRole, UserRole.user_id == User.id)
+            .join(UserRole, UserRole.user_id == User.feishu_user_id)
             .filter(UserRole.role_id == role_id)
             .order_by(UserRole.created_at.desc())
         )
@@ -128,7 +128,7 @@ class RoleService:
         # 通知权限变更
         permission_notifier.notify_role_permissions_updated(role)
     
-    async def assign_role_to_user(self, user_id: int, role_id: int, created_by: Optional[int] = None):
+    async def assign_role_to_user(self, user_id: str, role_id: int, created_by: Optional[str] = None):
         """为用户分配角色"""
         user_role = UserRole(
             user_id=user_id,
@@ -141,7 +141,7 @@ class RoleService:
         # 通知用户权限变更
         permission_notifier.notify_user_permissions_changed(user_id)
     
-    async def remove_role_from_user(self, user_id: int, role_id: int) -> bool:
+    async def remove_role_from_user(self, user_id: str, role_id: int) -> bool:
         """移除用户角色"""
         result = await self.db.execute(
             delete(UserRole).where(
@@ -326,13 +326,13 @@ class ResourceBindingService:
     
     async def create_binding(
         self,
-        user_id: int,
+        user_id: str,
         namespace: str,
         resource_type: str,
         resource_id: str,
         system_id: Optional[int] = None,
         action: str = "",
-        created_by: Optional[int] = None
+        created_by: Optional[str] = None
     ) -> ResourceBinding:
         """创建资源绑定"""
         binding = ResourceBinding(
@@ -355,13 +355,13 @@ class ResourceBindingService:
     
     async def batch_create_bindings(
         self,
-        user_id: int,
+        user_id: str,
         namespace: str,
         resource_type: str,
         resource_ids: List[str],
         system_id: Optional[int] = None,
         action: str = "",
-        created_by: Optional[int] = None
+        created_by: Optional[str] = None
     ):
         """批量创建资源绑定"""
         bindings = []
@@ -385,7 +385,7 @@ class ResourceBindingService:
     
     async def list_bindings(
         self,
-        user_id: Optional[int] = None,
+        user_id: Optional[str] = None,
         system_id: Optional[int] = None,
         namespace: Optional[str] = None
     ) -> List[ResourceBinding]:

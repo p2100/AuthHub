@@ -8,7 +8,7 @@ const { Text } = Typography
 
 interface UserPermissionModalProps {
   visible: boolean
-  userId: number
+  userId: string
   username: string
   onClose: () => void
 }

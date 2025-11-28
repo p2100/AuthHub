@@ -2,11 +2,13 @@
 
 from typing import AsyncGenerator
 
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
 
+logger.info(f"Creating async engine with URL: {settings.DATABASE_URL}")
 # 创建异步数据库引擎
 engine = create_async_engine(
     settings.DATABASE_URL,

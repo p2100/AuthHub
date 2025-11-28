@@ -34,7 +34,7 @@ const UserList = () => {
 
   // 更新用户状态
   const updateStatusMutation = useMutation({
-    mutationFn: ({ userId, status }: { userId: number; status: 'active' | 'inactive' }) =>
+    mutationFn: ({ userId, status }: { userId: string; status: 'active' | 'inactive' }) =>
       apiPut<User>(`/users/${userId}/status`, { status }),
     onSuccess: () => {
       message.success('用户状态更新成功')
@@ -45,7 +45,7 @@ const UserList = () => {
     },
   })
 
-  const handleStatusChange = (userId: number, checked: boolean) => {
+  const handleStatusChange = (userId: string, checked: boolean) => {
     updateStatusMutation.mutate({
       userId,
       status: checked ? 'active' : 'inactive',
@@ -105,7 +105,7 @@ const UserList = () => {
           checked={status === 'active'}
           checkedChildren="启用"
           unCheckedChildren="禁用"
-          onChange={(checked) => handleStatusChange(record.id, checked)}
+          onChange={(checked) => handleStatusChange(record.feishu_user_id, checked)}
           loading={updateStatusMutation.isPending}
         />
       ),
@@ -172,7 +172,7 @@ const UserList = () => {
         <Table
           columns={columns}
           dataSource={data?.items || []}
-          rowKey="id"
+          rowKey="feishu_user_id"
           pagination={{
             current: page,
             pageSize: pageSize,
@@ -191,7 +191,7 @@ const UserList = () => {
       {selectedUser && (
         <UserPermissionModal
           visible={permissionModalVisible}
-          userId={selectedUser.id}
+          userId={selectedUser.feishu_user_id}
           username={selectedUser.username}
           onClose={() => {
             setPermissionModalVisible(false)
@@ -204,7 +204,7 @@ const UserList = () => {
       {selectedUser && (
         <AssignRoleModal
           visible={assignRoleModalVisible}
-          userId={selectedUser.id}
+          userId={selectedUser.feishu_user_id}
           username={selectedUser.username}
           onClose={() => {
             setAssignRoleModalVisible(false)

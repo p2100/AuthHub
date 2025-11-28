@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -15,12 +15,12 @@ class UserRole(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        String(100), ForeignKey("users.feishu_user_id", ondelete="CASCADE"), nullable=False, index=True
     )
     role_id = Column(
         Integer, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    created_by = Column(Integer, ForeignKey("users.id"), comment="分配人ID")
+    created_by = Column(String(100), ForeignKey("users.feishu_user_id"), comment="分配人ID")
     created_at = Column(DateTime, default=datetime.utcnow, comment="创建时间")
 
     # 关系

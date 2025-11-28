@@ -68,7 +68,7 @@ export interface UserRole {
   role_name: string
   namespace: string
   assigned_at: string
-  created_by?: number
+  created_by?: string
 }
 
 export interface UserPermissionDetail {
@@ -142,7 +142,7 @@ export interface UpdateRolePermissions {
 }
 
 export interface AssignRoleRequest {
-  user_id: number
+  user_id: string
   role_id: number
 }
 
@@ -203,18 +203,18 @@ export interface RoutePatternUpdate {
 
 export interface ResourceBinding {
   id: number
-  user_id: number
+  user_id: string
   namespace: string
   resource_type: string
   resource_id: string
   system_id?: number
   action: string
   created_at: string
-  created_by: number
+  created_by: string
 }
 
 export interface ResourceBindingCreate {
-  user_id: number
+  user_id: string
   namespace: string
   resource_type: string
   resource_ids: string[]

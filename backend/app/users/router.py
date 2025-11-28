@@ -44,7 +44,7 @@ async def list_users(
 
 @router.get("/{user_id}", response_model=UserDetailResponse)
 async def get_user(
-    user_id: int,
+    user_id: str,
     current_user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -64,7 +64,7 @@ async def get_user(
 
 @router.put("/{user_id}/status", response_model=UserResponse)
 async def update_user_status(
-    user_id: int,
+    user_id: str,
     status_update: UserStatusUpdate,
     current_user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
@@ -89,7 +89,7 @@ async def update_user_status(
 
 @router.get("/{user_id}/roles", response_model=list[UserRoleResponse])
 async def get_user_roles(
-    user_id: int,
+    user_id: str,
     current_user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -127,7 +127,7 @@ async def get_user_roles(
 
 @router.get("/{user_id}/permissions", response_model=UserPermissionDetail)
 async def get_user_permissions(
-    user_id: int,
+    user_id: str,
     current_user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):

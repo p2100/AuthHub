@@ -135,7 +135,7 @@ const CreateResourceBindingModal = ({ visible, onClose, onSuccess }: CreateResou
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
             }
             options={usersData?.items.map((u) => ({ 
-              value: u.id, 
+              value: u.feishu_user_id, 
               label: `${u.username} (${u.email || u.feishu_user_id})` 
             }))}
           />

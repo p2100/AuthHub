@@ -22,7 +22,6 @@ class JWTHandler:
 
     def create_access_token(
         self,
-        user_id: int,
         feishu_user_id: str,
         username: str,
         email: str,
@@ -38,7 +37,6 @@ class JWTHandler:
         创建用户Token
 
         Args:
-            user_id: 用户ID
             feishu_user_id: 飞书用户ID
             username: 用户名
             email: 邮箱
@@ -59,7 +57,7 @@ class JWTHandler:
         expire = datetime.utcnow() + expires_delta
 
         payload = {
-            "sub": str(user_id),
+            "sub": feishu_user_id,
             "user_type": "user",
             "feishu_user_id": feishu_user_id,
             "username": username,
@@ -72,7 +70,7 @@ class JWTHandler:
             "system_resources": system_resources,
             "exp": expire,
             "iat": datetime.utcnow(),
-            "jti": f"user_{user_id}_{int(datetime.utcnow().timestamp())}",
+            "jti": f"user_{feishu_user_id}_{int(datetime.utcnow().timestamp())}",
         }
 
         # 读取私钥
@@ -153,12 +151,12 @@ class JWTHandler:
         """
         return redis_client.exists(f"blacklist:{jti}") > 0
 
-    def create_refresh_token(self, user_id: int) -> str:
+    def create_refresh_token(self, user_id: str) -> str:
         """
         生成 refresh token 并存储到 Redis
 
         Args:
-            user_id: 用户ID
+            user_id: 用户ID (Feishu User ID)
 
         Returns:
             Refresh Token (随机字符串)
@@ -168,11 +166,11 @@ class JWTHandler:
         redis_client.setex(
             f"refresh_token:{token}",
             7 * 24 * 3600,  # 7天
-            str(user_id),
+            user_id,
         )
         return token
 
-    def verify_refresh_token(self, token: str) -> Optional[int]:
+    def verify_refresh_token(self, token: str) -> Optional[str]:
         """
         验证 refresh token
 
@@ -180,10 +178,10 @@ class JWTHandler:
             token: Refresh Token
 
         Returns:
-            用户ID，如果无效则返回 None
+            用户ID (Feishu User ID)，如果无效则返回 None
         """
         user_id = redis_client.get(f"refresh_token:{token}")
-        return int(user_id) if user_id else None
+        return user_id if user_id else None
 
     def revoke_refresh_token(self, token: str):
         """

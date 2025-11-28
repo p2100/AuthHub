@@ -17,9 +17,9 @@ class AuditLog(Base):
     action_type = Column(
         String(50), nullable=False, index=True, comment="操作类型: role_created, permission_updated"
     )
-    operator_id = Column(Integer, ForeignKey("users.id"), comment="操作人ID")
+    operator_id = Column(String(100), ForeignKey("users.feishu_user_id"), comment="操作人ID")
     target_type = Column(String(50), comment="目标类型: role, permission, user")
-    target_id = Column(Integer, comment="目标ID")
+    target_id = Column(String(100), comment="目标ID")
     namespace = Column(String(50), index=True, comment="命名空间")
     system_id = Column(Integer, ForeignKey("systems.id"), nullable=True)
     changes = Column(JSON, comment="变更详情")

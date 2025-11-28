@@ -63,7 +63,7 @@ class RoutePatternCreate(BaseModel):
 
 class ResourceBindingCreate(BaseModel):
     """创建资源绑定"""
-    user_id: int
+    user_id: str
     namespace: str
     resource_type: str
     resource_ids: List[str]
@@ -115,14 +115,14 @@ class RoutePatternUpdate(BaseModel):
 class ResourceBindingResponse(BaseModel):
     """资源绑定响应"""
     id: int
-    user_id: int
+    user_id: str
     namespace: str
     resource_type: str
     resource_id: str
     system_id: Optional[int]
     action: str
     created_at: datetime
-    created_by: int
+    created_by: str
     
     class Config:
         from_attributes = True
