@@ -124,6 +124,7 @@ class RoleService:
             self.db.add(role_perm)
         
         await self.db.commit()
+        await self.db.refresh(role)
         
         # 通知权限变更
         permission_notifier.notify_role_permissions_updated(role)
