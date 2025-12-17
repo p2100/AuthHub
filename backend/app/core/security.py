@@ -23,7 +23,9 @@ class JWTHandler:
     def create_access_token(
         self,
         feishu_user_id: str,
+        name: str,
         username: str,
+        avatar: str,
         email: str,
         global_roles: list,
         system_roles: dict,
@@ -38,7 +40,9 @@ class JWTHandler:
 
         Args:
             feishu_user_id: 飞书用户ID
+            name: 用户拼音
             username: 用户名
+            avatar: 用户头像
             email: 邮箱
             global_roles: 全局角色列表
             system_roles: 系统角色字典 {system: [roles]}
@@ -60,7 +64,9 @@ class JWTHandler:
             "sub": feishu_user_id,
             "user_type": "user",
             "feishu_user_id": feishu_user_id,
+            "name": name,
             "username": username,
+            "avatar": avatar,
             "email": email,
             "dept_ids": dept_ids or [],
             "dept_names": dept_names or [],
