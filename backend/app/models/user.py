@@ -17,6 +17,7 @@ class User(Base):
     feishu_user_id = Column(
         String(100), unique=True, nullable=False, index=True, comment="飞书用户ID"
     )
+    name = Column(String(30), comment="用户拼音")
     username = Column(String(100), nullable=False, comment="用户名")
     email = Column(String(200), index=True, comment="邮箱")
     avatar = Column(String(500), comment="头像URL")

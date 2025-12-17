@@ -37,11 +37,13 @@ class UserService:
         # 用户信息
         username = user_info.get("name", "")
         email = user_info.get("email", "")
+        name = email.split("@")[0]
         avatar = user_info.get("avatar_url", "")
         mobile = user_info.get("mobile", "")
 
         if user:
             # 更新现有用户
+            user.name = name
             user.username = username
             user.email = email
             user.avatar = avatar
@@ -52,6 +54,7 @@ class UserService:
             # 创建新用户
             user = User(
                 feishu_user_id=feishu_user_id,
+                name=name,
                 username=username,
                 email=email,
                 avatar=avatar,

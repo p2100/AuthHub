@@ -115,7 +115,9 @@ async def feishu_callback(
         logger.info("[登录回调] 步骤5: 生成JWT Token")
         token = jwt_handler.create_access_token(
             feishu_user_id=user.feishu_user_id,
+            name=user.name,
             username=user.username,
+            avatar=user.avatar,
             email=user.email or "",
             global_roles=user_permissions.get("global_roles", []),
             system_roles=user_permissions.get("system_roles", {}),
