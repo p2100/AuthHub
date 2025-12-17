@@ -257,7 +257,9 @@ async def refresh_access_token(request: RefreshTokenRequest, db: AsyncSession = 
     # 5. 生成新的 tokens
     access_token = jwt_handler.create_access_token(
         feishu_user_id=user.feishu_user_id,
+        name=user.name,
         username=user.username,
+        avatar=user.avatar,
         email=user.email or "",
         global_roles=user_permissions.get("global_roles", []),
         system_roles=user_permissions.get("system_roles", {}),
@@ -372,7 +374,9 @@ async def exchange_sso_token(request: SSOExchangeTokenRequest, db: AsyncSession 
         logger.info("[SSO] 步骤5: 生成 JWT Token")
         token = jwt_handler.create_access_token(
             feishu_user_id=user.feishu_user_id,
+            name=user.name,
             username=user.username,
+            avatar=user.avatar,
             email=user.email or "",
             global_roles=user_permissions.get("global_roles", []),
             system_roles=user_permissions.get("system_roles", {}),
